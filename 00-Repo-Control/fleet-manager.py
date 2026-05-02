@@ -120,6 +120,7 @@ def audit_repo(repo):
     # 2. Get GitHub CI Status (API)
     import urllib.request
     import json as py_json
+    import ssl
     
     run_status = "UNKNOWN"
     token = os.getenv("GITHUB_TOKEN")
@@ -127,14 +128,18 @@ def audit_repo(repo):
     url = f"https://api.github.com/repos/{owner}/{name}/actions/runs?per_page=1"
     
     try:
+        # Create unverified context for macOS compatibility
+        context = ssl._create_unverified_context()
+        
         req = urllib.request.Request(url)
         if token:
             req.add_header("Authorization", f"token {token}")
         req.add_header("User-Agent", "Fleet-Manager-Bot")
+        req.add_header("Accept", "application/vnd.github+json")
         
-        with urllib.request.urlopen(req, timeout=5) as response:
+        with urllib.request.urlopen(req, timeout=5, context=context) as response:
             data = py_json.loads(response.read().decode())
-            if data["workflow_runs"]:
+            if data.get("workflow_runs"):
                 last_run = data["workflow_runs"][0]
                 status = last_run["status"]
                 conclusion = last_run["conclusion"]
@@ -143,8 +148,11 @@ def audit_repo(repo):
                     run_status = "SUCCESS" if conclusion == "success" else "FAILURE"
                 else:
                     run_status = "PENDING"
-    except Exception:
-        run_status = "AUTH_REQ" if not token else "ERROR"
+            else:
+                run_status = "NO_RUNS"
+    except Exception as e:
+        # Get actual HTTP code if possible
+        run_status = f"HTTP {getattr(e, 'code', '???')}"
         
     return {
         "name": name,

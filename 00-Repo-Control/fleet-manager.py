@@ -105,6 +105,83 @@ def commit_repo(repo, message):
         
     return f"[ {name} ] COMMITTED: {message}"
 
+def audit_repo(repo):
+    path = repo["path"]
+    name = repo["name"]
+    
+    if not os.path.exists(path):
+        return {"name": name, "ci": "N/A", "dependabot": "N/A", "ai_init": "N/A", "run_status": "UNKNOWN"}
+    
+    # 1. Template Compliance
+    ci_exists = os.path.exists(os.path.join(path, ".github/workflows/ci.yml"))
+    dep_exists = os.path.exists(os.path.join(path, ".github/dependabot.yml"))
+    ai_exists = os.path.exists(os.path.join(path, "AI-Init.md"))
+    
+    # 2. Get GitHub CI Status (API)
+    import urllib.request
+    import json as py_json
+    
+    run_status = "UNKNOWN"
+    token = os.getenv("GITHUB_TOKEN")
+    owner = "Bastien-Antigravity"
+    url = f"https://api.github.com/repos/{owner}/{name}/actions/runs?per_page=1"
+    
+    try:
+        req = urllib.request.Request(url)
+        if token:
+            req.add_header("Authorization", f"token {token}")
+        req.add_header("User-Agent", "Fleet-Manager-Bot")
+        
+        with urllib.request.urlopen(req, timeout=5) as response:
+            data = py_json.loads(response.read().decode())
+            if data["workflow_runs"]:
+                last_run = data["workflow_runs"][0]
+                status = last_run["status"]
+                conclusion = last_run["conclusion"]
+                
+                if status == "completed":
+                    run_status = "SUCCESS" if conclusion == "success" else "FAILURE"
+                else:
+                    run_status = "PENDING"
+    except Exception:
+        run_status = "AUTH_REQ" if not token else "ERROR"
+        
+    return {
+        "name": name,
+        "ci": "✅" if ci_exists else "❌",
+        "dependabot": "✅" if dep_exists else "❌",
+        "ai_init": "✅" if ai_exists else "❌",
+        "run_status": run_status
+    }
+
+def install_templates(repo):
+    path = repo["path"]
+    name = repo["name"]
+    import shutil
+    
+    if not os.path.exists(path):
+        return f"[ {name} ] ERROR: Path not found"
+        
+    templates_dir = os.path.join(os.path.dirname(__file__), "..", "04-Templates")
+    workflows_dir = os.path.join(path, ".github", "workflows")
+    
+    # Create dirs
+    os.makedirs(workflows_dir, exist_ok=True)
+    
+    # Copy CI
+    shutil.copy2(
+        os.path.join(templates_dir, "ci-standard.yml"),
+        os.path.join(workflows_dir, "ci.yml")
+    )
+    
+    # Copy Dependabot
+    shutil.copy2(
+        os.path.join(templates_dir, "dependabot.yml"),
+        os.path.join(path, ".github", "dependabot.yml")
+    )
+    
+    return f"[ {name} ] Templates INSTALLED"
+
 def main():
     inventory_path = os.path.join(os.path.dirname(__file__), "inventory.json")
     with open(inventory_path, "r") as f:
@@ -146,6 +223,19 @@ def main():
         print(f"Executing Mass Commit: {message}")
         with ThreadPoolExecutor(max_workers=5) as executor:
             results = list(executor.map(lambda r: commit_repo(r, message), repos))
+        for r in results:
+            print(r)
+    elif command == "audit":
+        print(f"{'Repository':<25} | {'CI':<5} | {'Dep':<5} | {'AI':<5} | {'CI Status':<10}")
+        print("-" * 65)
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            results = list(executor.map(audit_repo, repos))
+        for r in results:
+            print(f"{r['name']:<25} | {r['ci']:<5} | {r['dependabot']:<5} | {r['ai_init']:<5} | {r['run_status']:<10}")
+    elif command == "install-templates":
+        print("Installing standard CI/CD templates across fleet...")
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            results = list(executor.map(install_templates, repos))
         for r in results:
             print(r)
     else:

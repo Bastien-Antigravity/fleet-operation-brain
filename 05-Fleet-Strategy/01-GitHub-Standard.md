@@ -1,5 +1,12 @@
 # 📡 Fleet Strategy: GitHub Standard
 
+## 🏗️ Repo Creation Protocol
+When the Fleet Commander initializes a new repository, it MUST include:
+1.  **AI-Init.md**: Context for the AI assistant.
+2.  **.github/dependabot.yml**: From the `04-Templates` folder.
+3.  **LICENSE & README**: Standardized ecosystem headers.
+4.  **Initial Branches**: Create `main` and `develop` immediately.
+
 ## 🎯 Global Branching Model (GitFlow Hybrid)
 Every repository in the Bastien-Antigravity fleet MUST follow this branching structure:
 
@@ -10,6 +17,12 @@ Every repository in the Bastien-Antigravity fleet MUST follow this branching str
 2.  **`develop` (Active)**:
     *   The primary integration branch.
     *   All features and fixes are merged here first.
+
+## 🛡️ GitHub Branch Protection
+Every repository MUST have "Branch Protection" enabled on GitHub for `main` and `develop`:
+- **No Force Push**: Prevent overwriting history.
+- **No Deletion**: Prevent accidental branch removal.
+- **Review Required**: Minimum 1 approving review (can be AI-Architect) before merging to `main`.
 3.  **`feature/*` or `fix/*`**:
     *   Short-lived branches for specific tasks.
     *   Must be deleted after merging.
@@ -18,6 +31,18 @@ Every repository in the Bastien-Antigravity fleet MUST follow this branching str
 - **Remote Naming**: The primary GitHub remote MUST be named `origin`.
 - **Sync Rule**: Before starting any task, the Fleet Commander must ensure `develop` is synced with `origin/develop`.
 - **Atomic Commits**: Commits should be granular and prefixed with the scope (e.g., `feat(safe-socket): ...`, `fix(config): ...`).
+
+## 🐹 Go Module Governance (v2+ Rule)
+To avoid the "Go Module Trap", repositories using Go MUST follow these rules when reaching Major Version 2 or higher:
+- **Module Path**: The `go.mod` file MUST append `/vN` to the module path (e.g., `module github.com/Bastien-Antigravity/safe-socket/v2`).
+- **Imports**: All internal and external imports for that repository MUST be updated to reflect the `/vN` path.
+- **Sync**: The Fleet Commander MUST verify `go.mod` consistency before creating a Major tag.
+
+## 📜 The Law of Commitment
+To maintain a clean and traceable history, the following rules apply:
+1.  **Mandatory Local Commit**: Every task (feat/fix) MUST be committed locally with a descriptive message before any fleet synchronization.
+2.  **No Magic Syncs**: The Fleet Manager will REFUSE to sync any repository with uncommitted changes. This prevents generic or "messy" commit messages from entering the history.
+3.  **Sync = Delivery**: Synchronization is strictly for pulling remote updates and delivering verified local commits to GitHub.
 
 ## 🤝 PR & Review Protocol
 - **AI-Validation**: No PR should be merged to `develop` without passing the **Sandbox Integration** tests.

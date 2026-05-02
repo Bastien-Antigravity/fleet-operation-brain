@@ -8,11 +8,27 @@
     *   Triggered by a **Git Tag** (e.g., `v1.2.3`).
     *   Requires a merge from `develop` to `main`.
 
+## 📦 Container Registry Standard
+- **Target**: All fleet images MUST be pushed to **GitHub Container Registry (ghcr.io)**.
+- **Naming**: `ghcr.io/Bastien-Antigravity/[microservice-name]:[tag]`.
+- **Retention**: Keep only the last 5 tags for non-production images; keep all production tags.
+
+## 📡 CD Orchestration (Fleet Commander)
+- **Deployment**: The Fleet Commander is responsible for updating the `docker-compose.yml` and `kubernetes` manifests across the fleet.
+- **Verification**: Post-deployment health checks (Stage 3) MUST be verified before considering a CD action complete.
+
 ## 🏷️ Versioning (SemVer)
 We follow **Semantic Versioning**:
 - **Major**: Breaking architectural changes.
 - **Minor**: New features, non-breaking.
 - **Patch**: Bug fixes, hardening.
+
+## 🎁 Release Management Protocol
+The Fleet Commander orchestrates releases using the following steps:
+1.  **Changelog Generation**: Aggregate all `feat:` and `fix:` commits since the last tag.
+2.  **Tagging**: Apply the SemVer tag to the `main` branch.
+3.  **GitHub Release**: Create a formal release on GitHub with the changelog and any compiled binaries (if applicable).
+4.  **Announcement**: Log the release in `fleet-operation-brain/02-Deployment-Logs/`.
 
 ## 🌀 Automated Updates (Watchtower)
 - **Standard**: All non-critical microservices (Log, Notif, Market) use `containrrr/watchtower` for automated image pulling.

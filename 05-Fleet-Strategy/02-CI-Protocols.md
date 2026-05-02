@@ -18,3 +18,8 @@ Every repository must execute these three stages (locally or via GitHub Actions)
 ## 🛑 Failure Protocol
 - **Blockers**: Any failure in Stage 1 or 2 blocks the merge.
 - **Warning**: Failures in Stage 3 on "non-hardened" repositories may be bypassed with Architect approval, but MUST be logged.
+
+## 🛠️ CI Maintenance & Templates
+- **Standard Template**: Every repository MUST use the `.github/workflows/ci-standard.yml` provided in the `04-Templates` folder.
+- **Global Updates**: When the Fleet Commander updates the `ci-standard.yml` template, they MUST propagate the change to all repositories in the `inventory.json`.
+- **Secrets**: CI workflows must NEVER contain hardcoded tokens. Use `secrets.GITHUB_TOKEN` or Organization-level secrets.

@@ -1,0 +1,26 @@
+{
+  "fleet_name": "Bastien-Antigravity",
+  "master_branch": "develop",
+  "repositories": [
+    { "name": "config-server", "path": "/Users/imac/Desktop/Bastien-Antigravity/config-server", "remote": "https://github.com/Bastien-Antigravity/config-server.git" },
+    { "name": "data-ingestor", "path": "/Users/imac/Desktop/Bastien-Antigravity/data-ingestor", "remote": "https://github.com/Bastien-Antigravity/data-ingestor.git" },
+    { "name": "distributed-config", "path": "/Users/imac/Desktop/Bastien-Antigravity/distributed-config", "remote": "https://github.com/Bastien-Antigravity/distributed-config.git" },
+    { "name": "docker-deployment", "path": "/Users/imac/Desktop/Bastien-Antigravity/docker-deployment", "remote": "https://github.com/Bastien-Antigravity/docker-deployment.git" },
+    { "name": "enhanced-backtesting", "path": "/Users/imac/Desktop/Bastien-Antigravity/enhanced-backtesting", "remote": "https://github.com/Bastien-Antigravity/enhanced-backtesting.git" },
+    { "name": "flexible-logger", "path": "/Users/imac/Desktop/Bastien-Antigravity/flexible-logger", "remote": "https://github.com/Bastien-Antigravity/flexible-logger.git" },
+    { "name": "fundamental-analysis", "path": "/Users/imac/Desktop/Bastien-Antigravity/fundamental-analysis", "remote": "https://github.com/Bastien-Antigravity/fundamental-analysis.git" },
+    { "name": "log-server", "path": "/Users/imac/Desktop/Bastien-Antigravity/log-server", "remote": "https://github.com/Bastien-Antigravity/log-server.git" },
+    { "name": "market-observer", "path": "/Users/imac/Desktop/Bastien-Antigravity/market-observer", "remote": "https://github.com/Bastien-Antigravity/market-observer.git" },
+    { "name": "microservice-toolbox", "path": "/Users/imac/Desktop/Bastien-Antigravity/microservice-toolbox", "remote": "https://github.com/Bastien-Antigravity/microservice-toolbox.git" },
+    { "name": "notif-server", "path": "/Users/imac/Desktop/Bastien-Antigravity/notif-server", "remote": "https://github.com/Bastien-Antigravity/notif-server.git" },
+    { "name": "obsidian-brain", "path": "/Users/imac/Desktop/Bastien-Antigravity/obsidian-brain", "remote": "https://github.com/Bastien-Antigravity/obsidian-brain.git", "master_branch": "main" },
+    { "name": "orderbook-aggregator", "path": "/Users/imac/Desktop/Bastien-Antigravity/orderbook-aggregator", "remote": "https://github.com/Bastien-Antigravity/orderbook-aggregator.git" },
+    { "name": "safe-socket", "path": "/Users/imac/Desktop/Bastien-Antigravity/safe-socket", "remote": "https://github.com/Bastien-Antigravity/safe-socket.git" },
+    { "name": "sandbox-testing", "path": "/Users/imac/Desktop/Bastien-Antigravity/sandbox-testing", "remote": "https://github.com/Bastien-Antigravity/sandbox-testing.git" },
+    { "name": "technical-analysis", "path": "/Users/imac/Desktop/Bastien-Antigravity/technical-analysis", "remote": "https://github.com/Bastien-Antigravity/technical-analysis.git" },
+    { "name": "tele-remote", "path": "/Users/imac/Desktop/Bastien-Antigravity/tele-remote", "remote": "https://github.com/Bastien-Antigravity/tele-remote.git" },
+    { "name": "business-bdd-brain", "path": "/Users/imac/Desktop/Bastien-Antigravity/business-bdd-brain", "remote": "https://github.com/Bastien-Antigravity/business-bdd-brain.git", "master_branch": "main" },
+    { "name": "universal-logger", "path": "/Users/imac/Desktop/Bastien-Antigravity/universal-logger", "remote": "https://github.com/Bastien-Antigravity/universal-logger.git" },
+    { "name": "web-interface", "path": "/Users/imac/Desktop/Bastien-Antigravity/web-interface", "remote": "https://github.com/Bastien-Antigravity/web-interface.git" }
+  ]
+}

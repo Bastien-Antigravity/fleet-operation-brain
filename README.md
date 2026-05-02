@@ -13,6 +13,7 @@ Welcome to the **Strategic Command Deck**. This brain is the cockpit for mass-ex
 - `02-Deployment-Logs/`: Historical record of what was changed and where.
 - `03-Migration-States/`: Current progress of ongoing fleet-wide transitions (e.g., "SafeSocket v2 Migration").
 - `04-Templates/`: Standard formats for Action Plans and Post-Mortems.
+- `05-Fleet-Strategy/`: Global laws for GitHub, CI, and CD.
 
 ## 🚦 Fleet Status
 - **Repositories Audited**: 9

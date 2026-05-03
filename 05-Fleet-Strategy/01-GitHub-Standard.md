@@ -46,4 +46,5 @@ To maintain a clean and traceable history, the following rules apply:
 
 ## 🤝 PR & Review Protocol
 - **AI-Validation**: No PR should be merged to `develop` without passing the **Sandbox Integration** tests.
+- **The Purger Gate**: Every significant change MUST pass through the **"Mister Straight-to-Goal"** check. If a fix can be achieved by removing code rather than adding it, that path MUST be chosen.
 - **Spec-First Alignment**: For hardened repositories, the PR description MUST link to the corresponding BDD Spec in the Specifications Brain.

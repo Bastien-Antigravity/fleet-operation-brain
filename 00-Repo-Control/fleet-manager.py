@@ -2,12 +2,16 @@ import os
 import json
 import subprocess
 import sys
+import re
+from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
+
+# -----------------------------------------------------------------------------------------------
 
 def run_git(path, args):
     try:
         result = subprocess.run(
-            ["git", "-C", path] + args,
+            ["git", "-C", str(path)] + args,
             capture_output=True,
             text=True,
             check=False
@@ -21,16 +25,32 @@ def get_status(repo):
     name = repo["name"]
     
     if not os.path.exists(path):
-        return {"name": name, "status": "MISSING", "branch": "N/A", "clean": False}
+        return {"name": name, "status": "MISSING", "branch": "N/A", "clean": False, "ahead": 0, "behind": 0}
     
     branch_out, _, _ = run_git(path, ["rev-parse", "--abbrev-ref", "HEAD"])
     status_out, _, _ = run_git(path, ["status", "--porcelain"])
     
+    # Check ahead/behind
+    ahead, behind = 0, 0
+    remote_branch = repo.get("master_branch", "develop")
+    
+    # Fetch to be sure we have latest remote info (optional, but status might be stale)
+    # run_git(path, ["fetch", "origin"]) 
+    
+    ab_out, _, code = run_git(path, ["rev-list", "--left-right", "--count", f"origin/{remote_branch}...HEAD"])
+    if code == 0:
+        # Format: "behind\tahead"
+        parts = ab_out.split()
+        if len(parts) == 2:
+            behind, ahead = int(parts[0]), int(parts[1])
+
     return {
         "name": name,
         "status": "OK",
         "branch": branch_out,
-        "clean": len(status_out) == 0
+        "clean": len(status_out) == 0,
+        "ahead": ahead,
+        "behind": behind
     }
 
 def sync_repo(repo):
@@ -47,205 +67,158 @@ def sync_repo(repo):
         return f"[ {name} ] SKIP: Uncommitted changes found. Please commit first."
     
     # 1. Pull
+    print(f"[ {name} ] Pulling {branch}...")
     _, err, code = run_git(path, ["pull", "origin", branch])
     if code != 0:
         return f"[ {name} ] PULL FAILED: {err}"
     
-    # 2. Push
+    # 2. Submodules
+    if os.path.exists(os.path.join(path, ".gitmodules")):
+        print(f"[ {name} ] Updating submodules...")
+        _, err, code = run_git(path, ["submodule", "update", "--init", "--recursive"])
+        if code != 0:
+            print(f"[ {name} ] SUBMODULE ERROR: {err}")
+
+    # 3. Push
+    print(f"[ {name} ] Pushing {branch}...")
     _, err, code = run_git(path, ["push", "origin", branch])
     if code != 0:
         return f"[ {name} ] PUSH FAILED: {err}"
     
     return f"[ {name} ] SYNCED ({branch})"
 
-def update_gitignore(repo, template_lines):
-    path = repo["path"]
-    name = repo["name"]
-    gitignore_path = os.path.join(path, ".gitignore")
-    
-    if not os.path.exists(path):
-        return f"[ {name} ] ERROR: Path not found"
-    
-    current_lines = []
-    if os.path.exists(gitignore_path):
-        with open(gitignore_path, "r") as f:
-            current_lines = [l.strip() for l in f.readlines()]
-    
-    # Merge and deduplicate
-    # We keep current lines and append new ones if they don't exist
-    new_lines = current_lines.copy()
-    for line in template_lines:
-        if line and not line.startswith("#") and line not in current_lines:
-            new_lines.append(line)
-        elif line.startswith("#"): # Keep headers
-            new_lines.append(line)
-            
-    with open(gitignore_path, "w") as f:
-        f.write("\n".join(new_lines) + "\n")
-        
-    return f"[ {name} ] .gitignore STANDARDIZED"
-
-def commit_repo(repo, message):
-    path = repo["path"]
-    name = repo["name"]
-    
-    if not os.path.exists(path):
-        return f"[ {name} ] ERROR: Path not found"
-    
-    # Only commit if there are changes
-    status_out, _, _ = run_git(path, ["status", "--porcelain"])
-    if len(status_out) == 0:
-        return f"[ {name} ] CLEAN: No changes to commit"
-        
-    run_git(path, ["add", "."])
-    _, err, code = run_git(path, ["commit", "-m", message])
-    
-    if code != 0:
-        return f"[ {name} ] COMMIT FAILED: {err}"
-        
-    return f"[ {name} ] COMMITTED: {message}"
-
 def audit_repo(repo):
     path = repo["path"]
     name = repo["name"]
     
     if not os.path.exists(path):
-        return {"name": name, "ci": "N/A", "dependabot": "N/A", "ai_init": "N/A", "run_status": "UNKNOWN"}
+        return {"name": name, "ci": "N/A", "dep": "N/A", "ai": "N/A", "run": "UNKNOWN"}
     
-    # 1. Template Compliance
     ci_exists = os.path.exists(os.path.join(path, ".github/workflows/ci.yml"))
     dep_exists = os.path.exists(os.path.join(path, ".github/dependabot.yml"))
     ai_exists = os.path.exists(os.path.join(path, "AI-Init.md"))
     
-    # 2. Get GitHub CI Status (API)
+    # GitHub CI Status
     import urllib.request
     import json as py_json
     import ssl
     
     run_status = "UNKNOWN"
     token = os.getenv("GITHUB_TOKEN")
-    owner = "Bastien-Antigravity"
-    url = f"https://api.github.com/repos/{owner}/{name}/actions/runs?per_page=1"
+    remote_url = repo.get("remote", "")
+    match = re.search(r"github\.com[:/](.+)/(.+)\.git", remote_url)
     
-    try:
-        # Create unverified context for macOS compatibility
-        context = ssl._create_unverified_context()
-        
-        req = urllib.request.Request(url)
-        if token:
-            req.add_header("Authorization", f"token {token}")
-        req.add_header("User-Agent", "Fleet-Manager-Bot")
-        req.add_header("Accept", "application/vnd.github+json")
-        
-        with urllib.request.urlopen(req, timeout=5, context=context) as response:
-            data = py_json.loads(response.read().decode())
-            if data.get("workflow_runs"):
-                last_run = data["workflow_runs"][0]
-                status = last_run["status"]
-                conclusion = last_run["conclusion"]
-                
-                if status == "completed":
-                    run_status = "SUCCESS" if conclusion == "success" else "FAILURE"
+    if match:
+        owner, repo_name = match.group(1), match.group(2)
+        url = f"https://api.github.com/repos/{owner}/{repo_name}/actions/runs?per_page=1"
+        try:
+            context = ssl._create_unverified_context()
+            req = urllib.request.Request(url)
+            if token: req.add_header("Authorization", f"token {token}")
+            req.add_header("User-Agent", "Fleet-Manager")
+            with urllib.request.urlopen(req, timeout=5, context=context) as response:
+                data = py_json.loads(response.read().decode())
+                if data.get("workflow_runs"):
+                    last = data["workflow_runs"][0]
+                    run_status = last["conclusion"].upper() if last["status"] == "completed" else last["status"].upper()
                 else:
-                    run_status = "PENDING"
-            else:
-                run_status = "NO_RUNS"
-    except Exception as e:
-        # Get actual HTTP code if possible
-        run_status = f"HTTP {getattr(e, 'code', '???')}"
-        
-    return {
-        "name": name,
-        "ci": "✅" if ci_exists else "❌",
-        "dependabot": "✅" if dep_exists else "❌",
-        "ai_init": "✅" if ai_exists else "❌",
-        "run_status": run_status
-    }
+                    run_status = "NONE"
+        except Exception as e:
+            code = getattr(e, 'code', '???')
+            run_status = f"ERR {code}"
+    
+    return {"name": name, "ci": "✅" if ci_exists else "❌", "dep": "✅" if dep_exists else "❌", "ai": "✅" if ai_exists else "❌", "run": run_status}
 
-def install_templates(repo):
-    path = repo["path"]
-    name = repo["name"]
-    import shutil
+def discover_repos(root_dir):
+    """Scans for all directories containing .git (dir or file) and updates inventory."""
+    print(f"Discovering repositories in {root_dir}...")
+    found = []
+    root_path = Path(root_dir).resolve()
     
-    if not os.path.exists(path):
-        return f"[ {name} ] ERROR: Path not found"
-        
-    templates_dir = os.path.join(os.path.dirname(__file__), "..", "04-Templates")
-    workflows_dir = os.path.join(path, ".github", "workflows")
-    
-    # Create dirs
-    os.makedirs(workflows_dir, exist_ok=True)
-    
-    # Copy CI
-    shutil.copy2(
-        os.path.join(templates_dir, "ci-standard.yml"),
-        os.path.join(workflows_dir, "ci.yml")
-    )
-    
-    # Copy Dependabot
-    shutil.copy2(
-        os.path.join(templates_dir, "dependabot.yml"),
-        os.path.join(path, ".github", "dependabot.yml")
-    )
-    
-    return f"[ {name} ] Templates INSTALLED"
+    for root, dirs, files in os.walk(root_dir):
+        # Detect .git directory OR .git file (submodules)
+        if ".git" in dirs or ".git" in files:
+            path = Path(root).resolve()
+            
+            # Skip the root directory itself to avoid registering the workspace root as a repo
+            if path == root_path:
+                if ".git" in dirs: dirs.remove(".git")
+                continue
+                
+            # Get remote URL
+            remote_out, _, _ = run_git(path, ["remote", "get-url", "origin"])
+            # Get current branch
+            branch_out, _, _ = run_git(path, ["rev-parse", "--abbrev-ref", "HEAD"])
+            
+            found.append({
+                "name": path.name,
+                "path": str(path.absolute()),
+                "remote": remote_out,
+                "master_branch": branch_out if branch_out else "develop"
+            })
+            
+            # If it's a directory, don't recurse into .git
+            if ".git" in dirs:
+                dirs.remove(".git")
+                
+    # Sort by name for consistency
+    found.sort(key=lambda x: x["name"])
+    return found
 
 def main():
-    inventory_path = os.path.join(os.path.dirname(__file__), "inventory.json")
+    inventory_path = Path(__file__).parent / "inventory.json"
     with open(inventory_path, "r") as f:
         inventory = json.load(f)
     
-    repos = inventory["repositories"]
     command = sys.argv[1] if len(sys.argv) > 1 else "status"
 
-    if command == "status":
-        print(f"{'Repository':<25} | {'Branch':<15} | {'Status':<10} | {'Clean':<5}")
-        print("-" * 65)
-        
+    if command == "discover":
+        # Discover in the parent of the parent of the script (Workspace Root)
+        workspace_root = Path(__file__).resolve().parents[3]
+        discovered = discover_repos(workspace_root)
+        inventory["repositories"] = discovered
+        with open(inventory_path, "w") as f:
+            json.dump(inventory, f, indent=2)
+        print(f"Discovered and registered {len(discovered)} repositories.")
+
+    elif command == "status":
+        print(f"{'Repository':<25} | {'Branch':<15} | {'Status':<8} | {'Clean':<5} | {'Ahead':<5} | {'Behind':<5}")
+        print("-" * 80)
         with ThreadPoolExecutor(max_workers=5) as executor:
-            results = list(executor.map(get_status, repos))
-            
+            results = list(executor.map(get_status, inventory["repositories"]))
         for r in results:
-            clean_str = "✅" if r["clean"] else "❌"
-            print(f"{r['name']:<25} | {r['branch']:<15} | {r['status']:<10} | {clean_str}")
+            clean = "✅" if r["clean"] else "❌"
+            print(f"{r['name']:<25} | {r['branch']:<15} | {r['status']:<8} | {clean:<5} | {r['ahead']:<5} | {r['behind']:<5}")
 
     elif command == "sync":
         print("Starting Global Fleet Sync...")
         with ThreadPoolExecutor(max_workers=5) as executor:
-            results = list(executor.map(sync_repo, repos))
-        for r in results:
-            print(r)
-    elif command == "gitignore":
-        print("Standardizing .gitignore across fleet...")
-        template_path = os.path.join(os.path.dirname(__file__), "..", "04-Templates", "gitignore-global")
-        with open(template_path, "r") as f:
-            template_lines = [l.strip() for l in f.readlines()]
-            
-        with ThreadPoolExecutor(max_workers=5) as executor:
-            # We use a lambda to pass the template_lines
-            results = list(executor.map(lambda r: update_gitignore(r, template_lines), repos))
-        for r in results:
-            print(r)
-    elif command == "commit":
-        message = sys.argv[2] if len(sys.argv) > 2 else "chore(fleet): mass sync"
-        print(f"Executing Mass Commit: {message}")
-        with ThreadPoolExecutor(max_workers=5) as executor:
-            results = list(executor.map(lambda r: commit_repo(r, message), repos))
-        for r in results:
-            print(r)
+            results = list(executor.map(sync_repo, inventory["repositories"]))
+        for r in results: print(r)
+
     elif command == "audit":
-        print(f"{'Repository':<25} | {'CI':<5} | {'Dep':<5} | {'AI':<5} | {'CI Status':<10}")
+        print(f"{'Repository':<25} | {'CI':<4} | {'Dep':<4} | {'AI':<4} | {'CI Status':<10}")
         print("-" * 65)
         with ThreadPoolExecutor(max_workers=5) as executor:
-            results = list(executor.map(audit_repo, repos))
+            results = list(executor.map(audit_repo, inventory["repositories"]))
         for r in results:
-            print(f"{r['name']:<25} | {r['ci']:<5} | {r['dependabot']:<5} | {r['ai_init']:<5} | {r['run_status']:<10}")
-    elif command == "install-templates":
-        print("Installing standard CI/CD templates across fleet...")
+            print(f"{r['name']:<25} | {r['ci']:<4} | {r['dep']:<4} | {r['ai']:<4} | {r['run']:<10}")
+
+    elif command == "commit":
+        msg = sys.argv[2] if len(sys.argv) > 2 else "chore(fleet): mass sync"
+        from concurrent.futures import as_completed
         with ThreadPoolExecutor(max_workers=5) as executor:
-            results = list(executor.map(install_templates, repos))
-        for r in results:
-            print(r)
+            # Reusing existing commit logic conceptually but simpler
+            def do_commit(repo):
+                path = repo["path"]
+                if not os.path.exists(path): return f"[ {repo['name']} ] MISSING"
+                status, _, _ = run_git(path, ["status", "--porcelain"])
+                if not status: return f"[ {repo['name']} ] CLEAN"
+                run_git(path, ["add", "."])
+                _, err, code = run_git(path, ["commit", "-m", msg])
+                return f"[ {repo['name']} ] COMMITTED" if code == 0 else f"[ {repo['name']} ] FAILED: {err}"
+            results = list(executor.map(do_commit, inventory["repositories"]))
+        for r in results: print(r)
     else:
         print(f"Unknown command: {command}")
 

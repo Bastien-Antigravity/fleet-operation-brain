@@ -16,7 +16,7 @@ Welcome to the **Strategic Command Deck**. This brain is the cockpit for mass-ex
 - `05-Fleet-Strategy/`: Global laws for GitHub, CI, and CD Standards.
 
 ## 🚦 Fleet Status
-- **Repositories Audited**: 9
+- **Repositories**: See `00-Repo-Control/inventory.json` for the live registry.
 - **Ongoing Migrations**: None.
 
 ---

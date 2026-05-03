@@ -1,5 +1,8 @@
 # 📡 Fleet Strategy: CI Protocols
 
+> [!NOTE]
+> This is the **Execution Layer**. For the architectural definitions and high-level rules, see **[[tech-stack-brain/04-Project-Deployment/04-CICD-and-Lifecycle|📐 CI/CD and Lifecycle Architecture]]**.
+
 ## 🧪 The 3-Stage Pipeline
 Every repository must execute these three stages (locally or via GitHub Actions):
 

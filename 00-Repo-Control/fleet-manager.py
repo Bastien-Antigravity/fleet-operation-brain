@@ -165,6 +165,35 @@ def audit_repo(repo):
     
     return {"name": name, "ci": "✅" if ci_exists else "❌", "dep": "✅" if dep_exists else "❌", "ai": "✅" if ai_exists else "❌", "run": run_status}
 
+def template_repo(repo, templates_dir):
+    path = Path(repo["path"])
+    name = repo["name"]
+    
+    if not path.exists():
+        return f"[ {name} ] MISSING"
+        
+    github_dir = path / ".github"
+    workflows_dir = github_dir / "workflows"
+    
+    github_dir.mkdir(exist_ok=True)
+    workflows_dir.mkdir(exist_ok=True)
+    
+    # 1. CI Template
+    ci_src = templates_dir / "ci-standard.yml"
+    ci_dst = workflows_dir / "ci.yml"
+    if ci_src.exists():
+        with open(ci_src, "r") as src, open(ci_dst, "w") as dst:
+            dst.write(src.read())
+            
+    # 2. Dependabot Template
+    dep_src = templates_dir / "dependabot.yml"
+    dep_dst = github_dir / "dependabot.yml"
+    if dep_src.exists():
+        with open(dep_src, "r") as src, open(dep_dst, "w") as dst:
+            dst.write(src.read())
+            
+    return f"[ {name} ] TEMPLATED (.github/workflows/ci.yml, .github/dependabot.yml)"
+
 def discover_repos(root_dir):
     """Scans for all directories containing .git (dir or file) and updates inventory."""
     print(f"Discovering repositories in {root_dir}...")
@@ -296,6 +325,16 @@ def main():
                     return f"[ {repo['name']} ] CREATED & CHECKED OUT" if code == 0 else f"[ {repo['name']} ] FAILED: {err}"
             results = list(executor.map(do_branch, inventory["repositories"]))
         for r in results: print(r)
+
+    elif command == "template":
+        templates_dir = Path(__file__).parent.parent / "04-Templates"
+        print(f"Applying fleet templates from {templates_dir}...")
+        with ThreadPoolExecutor(max_workers=optimal_workers) as executor:
+            def do_template(repo):
+                return template_repo(repo, templates_dir)
+            results = list(executor.map(do_template, inventory["repositories"]))
+        for r in results: print(r)
+
     else:
         print(f"Unknown command: {command}")
 

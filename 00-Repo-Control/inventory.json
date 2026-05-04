@@ -3,9 +3,9 @@
   "master_branch": "develop",
   "repositories": [
     {
-      "name": "business-bdd-brain",
-      "path": "/Users/imac/Desktop/Bastien-Antigravity/obsidian-brain/business-bdd-brain",
-      "remote": "https://github.com/Bastien-Antigravity/business-bdd-brain.git",
+      "name": "02-Business-BDD",
+      "path": "/Users/imac/Desktop/Bastien-Antigravity/obsidian-brain/02-Business-BDD",
+      "remote": "https://github.com/Bastien-Antigravity/02-Business-BDD.git",
       "master_branch": "develop"
     },
     {
@@ -15,9 +15,9 @@
       "master_branch": "develop"
     },
     {
-      "name": "core-kms-brain",
-      "path": "/Users/imac/Desktop/Bastien-Antigravity/obsidian-brain/core-kms-brain",
-      "remote": "https://github.com/Bastien-Antigravity/core-kms-brain.git",
+      "name": "07-Core-KMS",
+      "path": "/Users/imac/Desktop/Bastien-Antigravity/obsidian-brain/07-Core-KMS",
+      "remote": "https://github.com/Bastien-Antigravity/07-Core-KMS.git",
       "master_branch": "develop"
     },
     {
@@ -45,9 +45,9 @@
       "master_branch": "develop"
     },
     {
-      "name": "fleet-operation-brain",
-      "path": "/Users/imac/Desktop/Bastien-Antigravity/obsidian-brain/fleet-operation-brain",
-      "remote": "https://github.com/Bastien-Antigravity/fleet-operation-brain.git",
+      "name": "05-Fleet-Operation",
+      "path": "/Users/imac/Desktop/Bastien-Antigravity/obsidian-brain/05-Fleet-Operation",
+      "remote": "https://github.com/Bastien-Antigravity/05-Fleet-Operation.git",
       "master_branch": "develop"
     },
     {
@@ -81,9 +81,9 @@
       "master_branch": "develop"
     },
     {
-      "name": "nexus-strategic-brain",
-      "path": "/Users/imac/Desktop/Bastien-Antigravity/obsidian-brain/nexus-strategic-brain",
-      "remote": "https://github.com/Bastien-Antigravity/nexus-strategic-brain.git",
+      "name": "01-Strategic-Nexus",
+      "path": "/Users/imac/Desktop/Bastien-Antigravity/obsidian-brain/01-Strategic-Nexus",
+      "remote": "https://github.com/Bastien-Antigravity/01-Strategic-Nexus.git",
       "master_branch": "develop"
     },
     {
@@ -105,9 +105,9 @@
       "master_branch": "develop"
     },
     {
-      "name": "rapid-prototyping-brain",
-      "path": "/Users/imac/Desktop/Bastien-Antigravity/obsidian-brain/rapid-prototyping-brain",
-      "remote": "https://github.com/Bastien-Antigravity/rapid-prototyping-brain",
+      "name": "04-Rapid-Prototyping",
+      "path": "/Users/imac/Desktop/Bastien-Antigravity/obsidian-brain/04-Rapid-Prototyping",
+      "remote": "https://github.com/Bastien-Antigravity/04-Rapid-Prototyping",
       "master_branch": "develop"
     },
     {
@@ -123,9 +123,9 @@
       "master_branch": "develop"
     },
     {
-      "name": "tech-stack-brain",
-      "path": "/Users/imac/Desktop/Bastien-Antigravity/obsidian-brain/tech-stack-brain",
-      "remote": "https://github.com/Bastien-Antigravity/tech-stack-brain.git",
+      "name": "03-Tech-Stack",
+      "path": "/Users/imac/Desktop/Bastien-Antigravity/obsidian-brain/03-Tech-Stack",
+      "remote": "https://github.com/Bastien-Antigravity/03-Tech-Stack.git",
       "master_branch": "develop"
     },
     {

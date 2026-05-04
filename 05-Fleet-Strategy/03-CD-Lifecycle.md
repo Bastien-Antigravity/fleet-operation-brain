@@ -28,7 +28,7 @@ The Fleet Commander orchestrates releases using the following steps:
 1.  **Changelog Generation**: Aggregate all `feat:` and `fix:` commits since the last tag.
 2.  **Tagging**: Apply the SemVer tag to the `main` branch.
 3.  **GitHub Release**: Create a formal release on GitHub with the changelog and any compiled binaries (if applicable).
-4.  **Announcement**: Log the release in `fleet-operation-brain/02-Deployment-Logs/`.
+4.  **Announcement**: Log the release in `05-Fleet-Operation/02-Deployment-Logs/`.
 
 ## 🌀 Automated Updates (Watchtower)
 - **Standard**: All non-critical microservices (Log, Notif, Market) use `containrrr/watchtower` for automated image pulling.

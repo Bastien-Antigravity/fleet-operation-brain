@@ -5,7 +5,7 @@
 **Action:** Global Standardization of CI/CD and Dependabot
 
 ## Operations Performed
-1. **Master CI Definition:** Created `fleet-operation-brain/.github/workflows/master-ci.yml`. This workflow centralizes Go/Python setup, linting, and sandbox triggering. It is designed to be intelligent: it runs `make test` if a Makefile exists, otherwise it falls back to native language tests.
+1. **Master CI Definition:** Created `05-Fleet-Operation/.github/workflows/master-ci.yml`. This workflow centralizes Go/Python setup, linting, and sandbox triggering. It is designed to be intelligent: it runs `make test` if a Makefile exists, otherwise it falls back to native language tests.
 2. **Templating Engine:** Updated `fleet-manager.py` with a new `template` command.
 3. **Global Rollout:** Executed `fleet-manager.py template` across all 25 repositories. Every repo now has:
     - `.github/workflows/ci.yml`: A lightweight caller pointing to the Master CI.

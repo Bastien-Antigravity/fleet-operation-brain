@@ -1,3 +1,9 @@
+---
+microservice: obsidian-brain
+type: fleet-op
+status: active
+---
+
 # Fleet Standardization Log
 
 **Date:** 2026-05-04

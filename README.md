@@ -1,3 +1,9 @@
+---
+microservice: obsidian-brain
+type: fleet-op
+status: active
+---
+
 # 🛰️ Zone 3: Fleet Operations Brain (Orchestrator Mode)
 
 Welcome to the **Strategic Command Deck**. This brain is the cockpit for mass-execution across the Bastien-Antigravity fleet. It governs scale, synchronization, and automated migrations.

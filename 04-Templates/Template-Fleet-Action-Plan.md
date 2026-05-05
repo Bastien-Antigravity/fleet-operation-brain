@@ -1,3 +1,9 @@
+---
+microservice: obsidian-brain
+type: fleet-op
+status: active
+---
+
 # Fleet Action Plan: [Name]
 
 ---

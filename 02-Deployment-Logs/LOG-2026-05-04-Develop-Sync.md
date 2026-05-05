@@ -1,3 +1,9 @@
+---
+microservice: obsidian-brain
+type: fleet-op
+status: active
+---
+
 # Deployment Log: 2026-05-04-Develop-Sync
 
 ## 🎯 Objective

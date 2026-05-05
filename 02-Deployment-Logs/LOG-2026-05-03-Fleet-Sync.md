@@ -1,3 +1,9 @@
+---
+microservice: obsidian-brain
+type: fleet-op
+status: active
+---
+
 # Fleet Deployment Log: LOG-2026-05-03-Fleet-Sync
 
 ---

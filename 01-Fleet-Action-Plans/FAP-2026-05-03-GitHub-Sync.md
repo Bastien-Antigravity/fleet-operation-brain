@@ -11,7 +11,7 @@ type: fleet-action-plan
 status: active
 date: 2026-05-03
 scope: All 25 repositories in inventory.json
-mode: "[[MODE-MANUAL#Mode 3]]"
+mode: "[[00-AI-Orchestration/MODE-MANUAL]]"
 ---
 
 ## 🎯 Objective

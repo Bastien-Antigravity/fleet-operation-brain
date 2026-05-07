@@ -33,6 +33,20 @@ if sysStdout.encoding != 'utf-8':
     except (AttributeError, Exception):
         pass
 
+def _find_workspace_root() -> Path:
+    """
+    Walk up from this script's location until we find the workspace root.
+    Works from fleet-operation-brain/00-Repo-Control/ (standalone)
+    or obsidian-brain/05-Fleet-Operation/00-Repo-Control/ (submodule).
+    """
+    current = Path(__file__).resolve().parent
+    for parent in [current] + list(current.parents):
+        if (parent / "Bastien-Antigravity.code-workspace").exists():
+            return parent
+        if (parent / "obsidian-brain").is_dir() and (parent / "fleet-operation-brain").is_dir():
+            return parent
+    return Path(__file__).resolve().parents[2]
+
 # ### GIT HELPERS ###
 
 def run_git(path: Path, args: List[str], timeout: int = 30) -> Tuple[str, str, int]:
@@ -296,8 +310,7 @@ def _resolve_inventory_paths(inventory: Dict[str, Any]) -> Dict[str, Any]:
     Resolves relative paths in inventory.json to absolute paths based on
     the workspace root. This makes the inventory portable across platforms.
     """
-    # Workspace root is the parent of fleet-operation-brain (2 levels up from this script)
-    workspace_root = Path(__file__).resolve().parents[2]
+    workspace_root = _find_workspace_root()
     
     for repo in inventory.get("repositories", []):
         repo_path = repo.get("path", "")
@@ -331,7 +344,7 @@ def main() -> None:
 
     if command == "discover":
         # Discover in the workspace root
-        workspace_root = Path(__file__).resolve().parents[2]
+        workspace_root = _find_workspace_root()
         discovered = discover_repos(workspace_root)
         # Store as relative paths for portability
         for repo in discovered:

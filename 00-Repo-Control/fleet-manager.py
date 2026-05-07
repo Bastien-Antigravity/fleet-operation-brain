@@ -1,16 +1,46 @@
-import os
-import json
-import subprocess
-import sys
-import re
+#!/usr/bin/env python
+# coding:utf-8
+"""
+ESSENTIAL PROCESS:
+Orchestrates fleet-wide operations across all repositories in the 
+Bastien-Antigravity ecosystem, including synchronization, status auditing, 
+tagging, and restoration.
+
+DATA FLOW:
+1. Loads inventory.json to identify the fleet members.
+2. Parallelizes Git operations across the fleet using ThreadPoolExecutor.
+3. Collects and aggregates logs and status reports.
+4. Updates repository states on disk.
+
+KEY PARAMETERS:
+- inventory_path: Location of the fleet registry.
+- optimal_workers: Number of threads for parallel execution.
+"""
+
+from sys import argv as sysArgv, executable as sysExecutable, stdout as sysStdout
+from os import name as osName, getenv as osGetenv, walk as osWalk
+from os.path import exists as osPathExists, join as osPathJoin
+from json import load as jsonLoad, dump as jsonDump
+from subprocess import run as subprocessRun, TimeoutExpired as subprocessTimeoutExpired
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
+from typing import List, Dict, Any, Optional, Tuple
 
-# -----------------------------------------------------------------------------------------------
-
-def run_git(path, args, timeout=30):
+# Standardize terminal output encoding for Windows
+if sysStdout.encoding != 'utf-8':
     try:
-        result = subprocess.run(
+        sysStdout.reconfigure(encoding='utf-8')
+    except (AttributeError, Exception):
+        pass
+
+# ### GIT HELPERS ###
+
+def run_git(path: Path, args: List[str], timeout: int = 30) -> Tuple[str, str, int]:
+    """
+    Executes a Git command in a specific directory.
+    """
+    try:
+        result = subprocessRun(
             ["git", "-C", str(path)] + args,
             capture_output=True,
             text=True,
@@ -18,29 +48,34 @@ def run_git(path, args, timeout=30):
             timeout=timeout
         )
         return result.stdout.strip(), result.stderr.strip(), result.returncode
-    except subprocess.TimeoutExpired:
+    except subprocessTimeoutExpired:
         return "", "Command timed out", -1
     except Exception as e:
         return "", str(e), -1
 
-def get_status(repo):
+# -----------------------------------------------------------------------------------------------
+
+def get_status(repo: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Checks the status of a single repository (branch, cleanliness, ahead/behind).
+    """
     path = repo["path"]
     name = repo["name"]
     
-    if not os.path.exists(path):
+    if not osPathExists(path):
         return {"name": name, "status": "MISSING", "branch": "N/A", "clean": False, "ahead": 0, "behind": 0}
     
-    branch_out, _, _ = run_git(path, ["rev-parse", "--abbrev-ref", "HEAD"])
-    status_out, _, _ = run_git(path, ["status", "--porcelain"])
+    branch_out, _, _ = run_git(Path(path), ["rev-parse", "--abbrev-ref", "HEAD"])
+    status_out, _, _ = run_git(Path(path), ["status", "--porcelain"])
     
     # Check ahead/behind
     ahead, behind = 0, 0
     remote_branch = repo.get("master_branch", "develop")
     
-    # Fetch to be sure we have latest remote info (timeout is set)
-    run_git(path, ["fetch", "origin"]) 
+    # Fetch to be sure we have latest remote info
+    run_git(Path(path), ["fetch", "origin"]) 
     
-    ab_out, _, code = run_git(path, ["rev-list", "--left-right", "--count", f"origin/{remote_branch}...HEAD"])
+    ab_out, _, code = run_git(Path(path), ["rev-list", "--left-right", "--count", "origin/{0}...HEAD".format(remote_branch)])
     if code == 0:
         # Format: "behind\tahead"
         parts = ab_out.split()
@@ -56,82 +91,95 @@ def get_status(repo):
         "behind": behind
     }
 
-def sync_repo(repo):
+# -----------------------------------------------------------------------------------------------
+
+def sync_repo(repo: Dict[str, Any]) -> List[str]:
+    """
+    Performs a pull-update-push sequence for a repository.
+    """
     path = repo["path"]
     name = repo["name"]
     target_branch = repo.get("master_branch", "develop")
     logs = []
     
-    if not os.path.exists(path):
-        logs.append(f"[ {name} ] ERROR: Path not found")
+    if not osPathExists(path):
+        logs.append("[ {0} ] ERROR: Path not found".format(name))
         return logs
     
     # 0. Check Cleanliness
-    status_out, _, _ = run_git(path, ["status", "--porcelain"])
+    status_out, _, _ = run_git(Path(path), ["status", "--porcelain"])
     if len(status_out) > 0:
-        logs.append(f"[ {name} ] SKIP: Uncommitted changes found. Please commit first.")
+        logs.append("[ {0} ] SKIP: Uncommitted changes found. Please commit first.".format(name))
         return logs
         
     # Check branch safety
-    current_branch, _, _ = run_git(path, ["rev-parse", "--abbrev-ref", "HEAD"])
+    current_branch, _, _ = run_git(Path(path), ["rev-parse", "--abbrev-ref", "HEAD"])
     if current_branch != target_branch:
-        logs.append(f"[ {name} ] SKIP: Currently on '{current_branch}', but target is '{target_branch}'. Skipping sync to avoid accidental merges.")
+        logs.append("[ {0} ] SKIP: Currently on '{1}', but target is '{2}'. Skipping sync.".format(name, current_branch, target_branch))
         return logs
     
     # 1. Pull
-    logs.append(f"[ {name} ] Pulling {target_branch}...")
-    _, err, code = run_git(path, ["pull", "origin", target_branch])
+    logs.append("[ {0} ] Pulling {1}...".format(name, target_branch))
+    _, err, code = run_git(Path(path), ["pull", "origin", target_branch])
     if code != 0:
-        logs.append(f"[ {name} ] PULL FAILED: {err}")
+        logs.append("[ {0} ] PULL FAILED: {1}".format(name, err))
         return logs
     
     # 2. Submodules
-    if os.path.exists(os.path.join(path, ".gitmodules")):
-        logs.append(f"[ {name} ] Updating submodules...")
-        _, err, code = run_git(path, ["submodule", "update", "--init", "--recursive"])
+    if osPathExists(osPathJoin(path, ".gitmodules")):
+        logs.append("[ {0} ] Updating submodules...".format(name))
+        _, err, code = run_git(Path(path), ["submodule", "update", "--init", "--recursive"])
         if code != 0:
-            logs.append(f"[ {name} ] SUBMODULE ERROR: {err}")
+            logs.append("[ {0} ] SUBMODULE ERROR: {1}".format(name, err))
 
     # 3. Push
-    logs.append(f"[ {name} ] Pushing {target_branch}...")
-    _, err, code = run_git(path, ["push", "origin", target_branch])
+    logs.append("[ {0} ] Pushing {1}...".format(name, target_branch))
+    _, err, code = run_git(Path(path), ["push", "origin", target_branch])
     if code != 0:
-        logs.append(f"[ {name} ] PUSH FAILED: {err}")
+        logs.append("[ {0} ] PUSH FAILED: {1}".format(name, err))
         return logs
     
-    logs.append(f"[ {name} ] SYNCED ({target_branch})")
+    logs.append("[ {0} ] SYNCED ({1})".format(name, target_branch))
     return logs
 
-def get_github_token():
-    # Attempt to read from environment
-    token = os.getenv("GITHUB_TOKEN")
+# ### GITHUB API HELPERS ###
+
+def get_github_token() -> Optional[str]:
+    """
+    Retrieves the GitHub token from environment variables or a local hidden file.
+    """
+    token = osGetenv("GITHUB_TOKEN")
     if token:
         return token
         
-    # Attempt to read from a secure file outside the repo
     token_path = Path.home() / ".github_token"
     if token_path.exists():
-        with open(token_path, "r") as f:
+        with open(token_path, "r", encoding='utf-8') as f:
             return f.read().strip()
             
     return None
 
-def audit_repo(repo):
+# -----------------------------------------------------------------------------------------------
+
+def audit_repo(repo: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Audits the repository for CI/CD standards and GitHub Action status.
+    """
+    # Late imports for heavy/specialized libraries
+    import urllib.request as urllibRequest
+    import urllib.error as urllibError
+    import ssl
+    import re
+    
     path = repo["path"]
     name = repo["name"]
     
-    if not os.path.exists(path):
+    if not osPathExists(path):
         return {"name": name, "ci": "N/A", "dep": "N/A", "ai": "N/A", "run": "UNKNOWN"}
     
-    ci_exists = os.path.exists(os.path.join(path, ".github/workflows/ci.yml"))
-    dep_exists = os.path.exists(os.path.join(path, ".github/dependabot.yml"))
-    ai_exists = os.path.exists(os.path.join(path, "AI-Init.md"))
-    
-    # GitHub CI Status
-    import urllib.request
-    import json as py_json
-    import ssl
-    import urllib.error
+    ci_exists = osPathExists(osPathJoin(path, ".github/workflows/ci.yml"))
+    dep_exists = osPathExists(osPathJoin(path, ".github/dependabot.yml"))
+    ai_exists = osPathExists(osPathJoin(path, "AI-Init.md"))
     
     run_status = "UNKNOWN"
     token = get_github_token()
@@ -140,37 +188,43 @@ def audit_repo(repo):
     
     if match:
         owner, repo_name = match.group(1), match.group(2)
-        url = f"https://api.github.com/repos/{owner}/{repo_name}/actions/runs?per_page=1"
+        url = "https://api.github.com/repos/{0}/{1}/actions/runs?per_page=1".format(owner, repo_name)
         try:
             context = ssl._create_unverified_context()
-            req = urllib.request.Request(url)
-            if token: req.add_header("Authorization", f"token {token}")
+            req = urllibRequest.Request(url)
+            if token: 
+                req.add_header("Authorization", "token {0}".format(token))
             req.add_header("User-Agent", "Fleet-Manager")
-            with urllib.request.urlopen(req, timeout=10, context=context) as response:
-                data = py_json.loads(response.read().decode())
+            with urllibRequest.urlopen(req, timeout=10, context=context) as response:
+                data = jsonLoad(response)
                 if data.get("workflow_runs"):
                     last = data["workflow_runs"][0]
                     run_status = last["conclusion"].upper() if last["status"] == "completed" else last["status"].upper()
                 else:
                     run_status = "NONE"
-        except urllib.error.HTTPError as e:
+        except urllibError.HTTPError as e:
             if e.code == 403:
                 run_status = "ERR 403 (Rate Limit)"
             elif e.code == 401:
                 run_status = "ERR 401 (Auth)"
             else:
-                run_status = f"ERR {e.code}"
-        except Exception as e:
+                run_status = "ERR {0}".format(e.code)
+        except Exception:
             run_status = "ERR NETWORK"
     
     return {"name": name, "ci": "✅" if ci_exists else "❌", "dep": "✅" if dep_exists else "❌", "ai": "✅" if ai_exists else "❌", "run": run_status}
 
-def template_repo(repo, templates_dir):
+# ### FLEET UTILITIES ###
+
+def template_repo(repo: Dict[str, Any], templates_dir: Path) -> str:
+    """
+    Applies standard CI/CD templates to a repository.
+    """
     path = Path(repo["path"])
     name = repo["name"]
     
     if not path.exists():
-        return f"[ {name} ] MISSING"
+        return "[ {0} ] MISSING".format(name)
         
     github_dir = path / ".github"
     workflows_dir = github_dir / "workflows"
@@ -182,32 +236,37 @@ def template_repo(repo, templates_dir):
     ci_src = templates_dir / "ci-standard.yml"
     ci_dst = workflows_dir / "ci.yml"
     if ci_src.exists():
-        with open(ci_src, "r") as src, open(ci_dst, "w") as dst:
+        with open(ci_src, "r", encoding='utf-8') as src, open(ci_dst, "w", encoding='utf-8') as dst:
             dst.write(src.read())
             
     # 2. Dependabot Template
     dep_src = templates_dir / "dependabot.yml"
     dep_dst = github_dir / "dependabot.yml"
     if dep_src.exists():
-        with open(dep_src, "r") as src, open(dep_dst, "w") as dst:
+        with open(dep_src, "r", encoding='utf-8') as src, open(dep_dst, "w", encoding='utf-8') as dst:
             dst.write(src.read())
             
-    return f"[ {name} ] TEMPLATED (.github/workflows/ci.yml, .github/dependabot.yml)"
+    return "[ {0} ] TEMPLATED".format(name)
 
-def discover_repos(root_dir):
-    """Scans for all directories containing .git (dir or file) and updates inventory."""
-    print(f"Discovering repositories in {root_dir}...")
+# -----------------------------------------------------------------------------------------------
+
+def discover_repos(root_dir: Path) -> List[Dict[str, Any]]:
+    """
+    Scans for all directories containing .git and updates inventory.
+    """
+    print("Discovering repositories in {0}...".format(root_dir))
     found = []
-    root_path = Path(root_dir).resolve()
+    root_path = root_dir.resolve()
     
-    for root, dirs, files in os.walk(root_dir):
+    for root, dirs, files in osWalk(root_dir):
         # Detect .git directory OR .git file (submodules)
         if ".git" in dirs or ".git" in files:
             path = Path(root).resolve()
             
-            # Skip the root directory itself to avoid registering the workspace root as a repo
+            # Skip the root directory itself
             if path == root_path:
-                if ".git" in dirs: dirs.remove(".git")
+                if ".git" in dirs: 
+                    dirs.remove(".git")
                 continue
                 
             # Get remote URL
@@ -222,7 +281,7 @@ def discover_repos(root_dir):
                 "master_branch": branch_out if branch_out else "develop"
             })
             
-            # If it's a directory, don't recurse into .git
+            # Don't recurse into .git
             if ".git" in dirs:
                 dirs.remove(".git")
                 
@@ -230,33 +289,70 @@ def discover_repos(root_dir):
     found.sort(key=lambda x: x["name"])
     return found
 
-def main():
-    inventory_path = Path(__file__).parent / "inventory.json"
-    with open(inventory_path, "r") as f:
-        inventory = json.load(f)
+# ### CORE COMMANDS ###
+
+def _resolve_inventory_paths(inventory: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Resolves relative paths in inventory.json to absolute paths based on
+    the workspace root. This makes the inventory portable across platforms.
+    """
+    # Workspace root is the parent of fleet-operation-brain (2 levels up from this script)
+    workspace_root = Path(__file__).resolve().parents[2]
+    
+    for repo in inventory.get("repositories", []):
+        repo_path = repo.get("path", "")
+        # If the path is relative (starts with ./ or is not absolute), resolve it
+        if repo_path.startswith("./") or repo_path.startswith("../") or not Path(repo_path).is_absolute():
+            repo["path"] = str((workspace_root / repo_path).resolve())
+    
+    return inventory
+
+# -----------------------------------------------------------------------------------------------
+
+def main() -> None:
+    """
+    Main entry point for the Fleet Manager CLI.
+    """
+    inventory_path = Path(__file__).resolve().parent / "inventory.json"
+    if not inventory_path.exists():
+        print("FleetManager: inventory.json not found.")
+        return
+
+    with open(inventory_path, "r", encoding='utf-8') as f:
+        inventory = jsonLoad(f)
+    
+    # Resolve relative paths to absolute for this machine
+    inventory = _resolve_inventory_paths(inventory)
         
     num_repos = len(inventory.get("repositories", []))
     optimal_workers = max(5, min(32, num_repos))
     
-    command = sys.argv[1] if len(sys.argv) > 1 else "status"
+    command = sysArgv[1] if len(sysArgv) > 1 else "status"
 
     if command == "discover":
-        # Discover in the parent of the parent of the script (Workspace Root)
-        workspace_root = Path(__file__).resolve().parents[3]
+        # Discover in the workspace root
+        workspace_root = Path(__file__).resolve().parents[2]
         discovered = discover_repos(workspace_root)
+        # Store as relative paths for portability
+        for repo in discovered:
+            try:
+                rel = Path(repo["path"]).relative_to(workspace_root)
+                repo["path"] = "./{0}".format(rel.as_posix())
+            except ValueError:
+                pass  # Keep absolute if outside workspace
         inventory["repositories"] = discovered
-        with open(inventory_path, "w") as f:
-            json.dump(inventory, f, indent=2)
-        print(f"Discovered and registered {len(discovered)} repositories.")
+        with open(inventory_path, "w", encoding='utf-8') as f:
+            jsonDump(inventory, f, indent=2)
+        print("Discovered and registered {0} repositories.".format(len(discovered)))
 
     elif command == "status":
-        print(f"{'Repository':<25} | {'Branch':<15} | {'Status':<8} | {'Clean':<5} | {'Ahead':<5} | {'Behind':<5}")
+        print("{0:<25} | {1:<15} | {2:<8} | {3:<5} | {4:<5} | {5:<5}".format('Repository', 'Branch', 'Status', 'Clean', 'Ahead', 'Behind'))
         print("-" * 80)
         with ThreadPoolExecutor(max_workers=optimal_workers) as executor:
             results = list(executor.map(get_status, inventory["repositories"]))
         for r in results:
             clean = "✅" if r["clean"] else "❌"
-            print(f"{r['name']:<25} | {r['branch']:<15} | {r['status']:<8} | {clean:<5} | {r['ahead']:<5} | {r['behind']:<5}")
+            print("{0:<25} | {1:<15} | {2:<8} | {3:<5} | {4:<5} | {5:<5}".format(r['name'], r['branch'], r['status'], clean, r['ahead'], r['behind']))
 
     elif command == "sync":
         print("Starting Global Fleet Sync...")
@@ -267,76 +363,111 @@ def main():
                 print(log)
 
     elif command == "audit":
-        print(f"{'Repository':<25} | {'CI':<4} | {'Dep':<4} | {'AI':<4} | {'CI Status':<20}")
+        print("{0:<25} | {1:<4} | {2:<4} | {3:<4} | {4:<20}".format('Repository', 'CI', 'Dep', 'AI', 'CI Status'))
         print("-" * 75)
         with ThreadPoolExecutor(max_workers=optimal_workers) as executor:
             results = list(executor.map(audit_repo, inventory["repositories"]))
         for r in results:
-            print(f"{r['name']:<25} | {r['ci']:<4} | {r['dep']:<4} | {r['ai']:<4} | {r['run']:<20}")
+            print("{0:<25} | {1:<4} | {2:<4} | {3:<4} | {4:<20}".format(r['name'], r['ci'], r['dep'], r['ai'], r['run']))
 
     elif command == "commit":
-        msg = sys.argv[2] if len(sys.argv) > 2 else "chore(fleet): mass sync"
-        from concurrent.futures import as_completed
+        msg = sysArgv[2] if len(sysArgv) > 2 else "chore(fleet): mass sync"
         with ThreadPoolExecutor(max_workers=optimal_workers) as executor:
-            def do_commit(repo):
+            def _do_commit(repo: Dict[str, Any]) -> str:
                 path = repo["path"]
-                if not os.path.exists(path): return f"[ {repo['name']} ] MISSING"
-                status, _, _ = run_git(path, ["status", "--porcelain"])
-                if not status: return f"[ {repo['name']} ] CLEAN"
-                run_git(path, ["add", "."])
-                _, err, code = run_git(path, ["commit", "-m", msg])
-                return f"[ {repo['name']} ] COMMITTED" if code == 0 else f"[ {repo['name']} ] FAILED: {err}"
-            results = list(executor.map(do_commit, inventory["repositories"]))
-        for r in results: print(r)
+                if not osPathExists(path): 
+                    return "[ {0} ] MISSING".format(repo['name'])
+                status, _, _ = run_git(Path(path), ["status", "--porcelain"])
+                if not status: 
+                    return "[ {0} ] CLEAN".format(repo['name'])
+                run_git(Path(path), ["add", "."])
+                _, err, code = run_git(Path(path), ["commit", "-m", msg])
+                return "[ {0} ] COMMITTED".format(repo['name']) if code == 0 else "[ {0} ] FAILED: {1}".format(repo['name'], err)
+            results = list(executor.map(_do_commit, inventory["repositories"]))
+        for r in results: 
+            print(r)
         
     elif command == "tag":
-        tag_name = sys.argv[2] if len(sys.argv) > 2 else None
+        tag_name = sysArgv[2] if len(sysArgv) > 2 else None
         if not tag_name:
             print("Usage: fleet-manager.py tag <tag_name>")
             return
-        print(f"Applying tag {tag_name} across the fleet...")
+        print("Applying tag {0} across the fleet...".format(tag_name))
         with ThreadPoolExecutor(max_workers=optimal_workers) as executor:
-            def do_tag(repo):
+            def _do_tag(repo: Dict[str, Any]) -> str:
                 path = repo["path"]
-                if not os.path.exists(path): return f"[ {repo['name']} ] MISSING"
-                run_git(path, ["tag", tag_name])
-                _, err, code = run_git(path, ["push", "origin", tag_name])
-                return f"[ {repo['name']} ] TAGGED & PUSHED" if code == 0 else f"[ {repo['name']} ] FAILED: {err}"
-            results = list(executor.map(do_tag, inventory["repositories"]))
-        for r in results: print(r)
+                if not osPathExists(path): 
+                    return "[ {0} ] MISSING".format(repo['name'])
+                run_git(Path(path), ["tag", tag_name])
+                _, err, code = run_git(Path(path), ["push", "origin", tag_name])
+                return "[ {0} ] TAGGED & PUSHED".format(repo['name']) if code == 0 else "[ {0} ] FAILED: {1}".format(repo['name'], err)
+            results = list(executor.map(_do_tag, inventory["repositories"]))
+        for r in results: 
+            print(r)
 
     elif command == "branch":
-        branch_name = sys.argv[2] if len(sys.argv) > 2 else None
+        branch_name = sysArgv[2] if len(sysArgv) > 2 else None
         if not branch_name:
             print("Usage: fleet-manager.py branch <branch_name>")
             return
-        print(f"Creating and checking out branch {branch_name} across the fleet...")
+        print("Checking out branch {0} across the fleet...".format(branch_name))
         with ThreadPoolExecutor(max_workers=optimal_workers) as executor:
-            def do_branch(repo):
+            def _do_branch(repo: Dict[str, Any]) -> str:
                 path = repo["path"]
-                if not os.path.exists(path): return f"[ {repo['name']} ] MISSING"
-                # Check if branch exists
-                _, _, code = run_git(path, ["rev-parse", "--verify", branch_name])
+                if not osPathExists(path): 
+                    return "[ {0} ] MISSING".format(repo['name'])
+                _, _, code = run_git(Path(path), ["rev-parse", "--verify", branch_name])
                 if code == 0:
-                    run_git(path, ["checkout", branch_name])
-                    return f"[ {repo['name']} ] CHECKED OUT EXISTING"
+                    run_git(Path(path), ["checkout", branch_name])
+                    return "[ {0} ] CHECKED OUT EXISTING".format(repo['name'])
                 else:
-                    _, err, code = run_git(path, ["checkout", "-b", branch_name])
-                    return f"[ {repo['name']} ] CREATED & CHECKED OUT" if code == 0 else f"[ {repo['name']} ] FAILED: {err}"
-            results = list(executor.map(do_branch, inventory["repositories"]))
-        for r in results: print(r)
+                    _, err, code = run_git(Path(path), ["checkout", "-b", branch_name])
+                    return "[ {0} ] CREATED & CHECKED OUT".format(repo['name']) if code == 0 else "[ {0} ] FAILED: {1}".format(repo['name'], err)
+            results = list(executor.map(_do_branch, inventory["repositories"]))
+        for r in results: 
+            print(r)
 
     elif command == "template":
-        templates_dir = Path(__file__).parent.parent / "04-Templates"
-        print(f"Applying fleet templates from {templates_dir}...")
+        templates_dir = Path(__file__).resolve().parent.parent / "04-Templates"
+        print("Applying fleet templates from {0}...".format(templates_dir))
         with ThreadPoolExecutor(max_workers=optimal_workers) as executor:
-            def do_template(repo):
+            def _do_template(repo: Dict[str, Any]) -> str:
                 return template_repo(repo, templates_dir)
-            results = list(executor.map(do_template, inventory["repositories"]))
-        for r in results: print(r)
+            results = list(executor.map(_do_template, inventory["repositories"]))
+        for r in results: 
+            print(r)
+
+    elif command == "restore":
+        print("Restoring missing repositories in the fleet...")
+        with ThreadPoolExecutor(max_workers=optimal_workers) as executor:
+            def _do_restore(repo: Dict[str, Any]) -> str:
+                path = Path(repo["path"])
+                name = repo["name"]
+                if path.exists():
+                    return "[ {0} ] EXISTS".format(name)
+                
+                remote = repo.get("remote")
+                if not remote:
+                    return "[ {0} ] ERROR: No remote URL".format(name)
+                
+                print("  [CLONE] Restoring {0}...".format(name))
+                res = subprocessRun(["git", "clone", remote, str(path)], capture_output=True, text=True)
+                return "[ {0} ] RESTORED".format(name) if res.returncode == 0 else "[ {0} ] FAILED: {1}".format(name, res.stderr.strip())
+            
+            results = list(executor.map(_do_restore, inventory["repositories"]))
+        for r in results: 
+            print(r)
+
+    elif command == "refresh":
+        refresh_script = Path(__file__).resolve().parent / "fleet-refresh.py"
+        args = sysArgv[2:]
+        print("Executing Nuclear Refresh via {0}...".format(refresh_script.name))
+        subprocessRun([sysExecutable, str(refresh_script)] + args)
 
     else:
-        print(f"Unknown command: {command}")
+        print("Unknown command: {0}".format(command))
+
+# -----------------------------------------------------------------------------------------------
 
 if __name__ == "__main__":
     main()

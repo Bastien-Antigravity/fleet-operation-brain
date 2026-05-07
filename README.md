@@ -1,5 +1,5 @@
 ---
-microservice: obsidian-brain
+microservice: fleet-operation-brain
 type: fleet-op
 status: active
 ---

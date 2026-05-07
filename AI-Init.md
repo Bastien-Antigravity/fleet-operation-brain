@@ -1,3 +1,9 @@
+---
+microservice: fleet-operation-brain
+type: governance
+status: active
+---
+
 # ⚡ AI Initialization: fleet-operation-brain
 
 > [!IMPORTANT] MANDATORY INITIALIZATION

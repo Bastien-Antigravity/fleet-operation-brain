@@ -471,6 +471,49 @@ def main() -> None:
         for r in results: 
             print(r)
 
+    elif command == "vault-sync":
+        msg = sysArgv[2] if len(sysArgv) > 2 else "chore(vault): atomic sync via Fleet Manager"
+        workspace_root = _find_workspace_root()
+        obsidian_dir = workspace_root / "obsidian-brain"
+        
+        if not obsidian_dir.exists():
+            print("FleetManager: obsidian-brain not found.")
+            return
+
+        print("🚀 Starting Atomic Vault Sync...")
+        
+        # 1. Sync all submodules
+        submodules = [d for d in obsidian_dir.iterdir() if d.is_dir() and (d / ".git").exists()]
+        for sub in submodules:
+            name = sub.name
+            status, _, _ = run_git(sub, ["status", "--porcelain"])
+            if status:
+                print(f"[ {name} ] Committing changes...")
+                run_git(sub, ["add", "."])
+                run_git(sub, ["commit", "-m", msg])
+            
+            print(f"[ {name} ] Pushing to origin...")
+            _, err, code = run_git(sub, ["push", "origin", "develop"])
+            if code != 0:
+                print(f"[ {name} ] PUSH FAILED: {err}")
+            else:
+                print(f"[ {name} ] SYNCED.")
+
+        # 2. Update parent pointer
+        print("[ obsidian-brain ] Updating submodule pointers...")
+        run_git(obsidian_dir, ["add", "."])
+        status, _, _ = run_git(obsidian_dir, ["status", "--porcelain"])
+        if status:
+            run_git(obsidian_dir, ["commit", "-m", "chore(fleet): update submodule pointers"])
+            print("[ obsidian-brain ] Pointers committed.")
+        
+        print("[ obsidian-brain ] Pushing vault to origin...")
+        _, err, code = run_git(obsidian_dir, ["push", "origin", "develop"])
+        if code == 0:
+            print("✨ Atomic Vault Sync Complete!")
+        else:
+            print(f"❌ Vault push failed: {err}")
+
     elif command == "refresh":
         refresh_script = Path(__file__).resolve().parent / "fleet-refresh.py"
         args = sysArgv[2:]

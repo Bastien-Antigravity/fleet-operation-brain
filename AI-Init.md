@@ -2,6 +2,10 @@
 microservice: fleet-operation-brain
 type: governance
 status: active
+tags:
+- '#type/governance'
+- null
+- '#state/active'
 ---
 
 # ⚡ AI Initialization: fleet-operation-brain

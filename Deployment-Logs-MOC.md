@@ -2,6 +2,10 @@
 microservice: deployment-logs-moc
 type: moc
 status: active
+tags:
+- '#state/active'
+- null
+- '#type/moc'
 ---
 
 # Deployment Logs MOC

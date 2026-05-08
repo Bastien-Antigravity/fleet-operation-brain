@@ -2,6 +2,10 @@
 microservice: obsidian-brain
 type: fleet-op
 status: active
+tags:
+- '#type/fleet-op'
+- null
+- '#state/active'
 ---
 
 # Fleet Standardization Log

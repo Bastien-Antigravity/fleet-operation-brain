@@ -2,6 +2,10 @@
 microservice: obsidian-brain
 type: fleet-op
 status: active
+tags:
+- '#type/fleet-op'
+- null
+- '#state/active'
 ---
 
 # Deployment Log: 2026-05-04-Develop-Sync

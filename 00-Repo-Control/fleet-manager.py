@@ -492,6 +492,9 @@ def main() -> None:
                 run_git(sub, ["add", "."])
                 run_git(sub, ["commit", "-m", msg])
             
+            print(f"[ {name} ] Pulling latest...")
+            run_git(sub, ["pull", "--rebase", "origin", "develop"])
+            
             print(f"[ {name} ] Pushing to origin...")
             _, err, code = run_git(sub, ["push", "origin", "develop"])
             if code != 0:

@@ -18,7 +18,7 @@ KEY PARAMETERS:
 """
 
 from sys import argv as sysArgv, executable as sysExecutable, stdout as sysStdout
-from os import name as osName, getenv as osGetenv, walk as osWalk
+from os import getenv as osGetenv, walk as osWalk
 from os.path import exists as osPathExists, join as osPathJoin
 from json import load as jsonLoad, dump as jsonDump
 from subprocess import run as subprocessRun, TimeoutExpired as subprocessTimeoutExpired

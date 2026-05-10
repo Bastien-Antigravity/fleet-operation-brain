@@ -252,7 +252,7 @@ def template_repo(repo: Dict[str, Any], templates_dir: Path) -> str:
     workflows_dir.mkdir(exist_ok=True)
     
     # Archetype Detection
-    is_polyglot = (path / "python").exists() or (path / "rust").exists()
+    is_polyglot = (path / "python").exists() or (path / "rust").exists() or (path / "cpp").exists()
     archetype = "Polyglot" if is_polyglot else "Microservice"
     archetype_dir = templates_dir / archetype
     

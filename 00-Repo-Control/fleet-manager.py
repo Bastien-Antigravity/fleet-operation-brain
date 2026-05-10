@@ -252,6 +252,12 @@ def _detect_language_path(repo_path: Path, lang: str) -> Optional[str]:
     if lang == "python":
         if (repo_path / "requirements.txt").exists() or (repo_path / "setup.py").exists():
             return "."
+    # 4. Special Case: Go (detect go.mod in root or subfolder)
+    if lang == "go":
+        if (repo_path / "go.mod").exists():
+            return "."
+        if (repo_path / "go" / "go.mod").exists():
+            return "go"
             
     return None
 
@@ -277,17 +283,8 @@ def template_repo(repo: Dict[str, Any], templates_dir: Path) -> str:
     github_dir.mkdir(exist_ok=True)
     workflows_dir.mkdir(exist_ok=True)
     
-    # Legacy Purge: Remove obsolete files to prevent duplicate runs
-    legacy_files = [
-        workflows_dir / "ci-cd.yml",
-        workflows_dir / "master-ci.yml",
-        github_dir / "workflows/ci-cd.yml" # Redundant check
-    ]
-    for legacy in legacy_files:
-        if legacy.exists():
-            legacy.unlink()
-    
     # Archetype Detection
+    go_path = _detect_language_path(path, "go")
     python_path = _detect_language_path(path, "python")
     rust_path = _detect_language_path(path, "rust")
     cpp_path = _detect_language_path(path, "cpp")
@@ -305,6 +302,8 @@ def template_repo(repo: Dict[str, Any], templates_dir: Path) -> str:
         
         # For Polyglot repos, dynamically append language-specific jobs from fragment templates
         if is_polyglot:
+            if go_path:
+                ci_content += _load_job_fragment("go", go_path, templates_dir)
             if python_path:
                 ci_content += _load_job_fragment("python", python_path, templates_dir)
             if rust_path:
@@ -339,7 +338,8 @@ def template_repo(repo: Dict[str, Any], templates_dir: Path) -> str:
     
     # Build the archetype label with detected languages
     if is_polyglot:
-        langs = ["Go"] if (path / "go.mod").exists() else []
+        langs = []
+        if go_path: langs.append("Go")
         if python_path: langs.append("Python")
         if rust_path: langs.append("Rust")
         if cpp_path: langs.append("C++")

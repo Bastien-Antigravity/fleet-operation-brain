@@ -230,93 +230,30 @@ def audit_repo(repo: Dict[str, Any]) -> Dict[str, Any]:
 
 # ### FLEET UTILITIES ###
 
-def _python_job_block() -> str:
-    """Returns the YAML block for a Python CI job (appended to Polyglot base)."""
-    return """
-  python-ci:
-    name: Python Tests
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.25'
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Build CGO Bridges
-        run: |
-          if grep -q "^core:" Makefile; then make core; elif grep -q "^build:" Makefile; then make build; fi
-
-      - name: Test Python SDK
-        working-directory: python
-        run: |
-          pip install pytest build setuptools wheel
-          if [ -f setup.py ]; then python setup.py build_go; fi
-          pip install -e .
-          pytest
-"""
+def _load_job_fragment(name: str, working_dir: str, templates_dir: Path) -> str:
+    """Loads a YAML fragment from the templates directory and injects the working directory."""
+    frag_path = templates_dir / "Polyglot" / "jobs" / f"{name}.yml"
+    if frag_path.exists():
+        with open(frag_path, "r", encoding='utf-8') as f:
+            content = f.read()
+        return content.replace("{{WORKING_DIR}}", working_dir)
+    return ""
 
 
-def _rust_job_block() -> str:
-    """Returns the YAML block for a Rust CI job (appended to Polyglot base)."""
-    return """
-  rust-ci:
-    name: Rust Tests
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.25'
-
-      - name: Build CGO Bridges
-        run: |
-          if grep -q "^core:" Makefile; then make core; elif grep -q "^build:" Makefile; then make build; fi
-
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: 1.91
-
-      - name: Test Rust SDK
-        working-directory: rust
-        run: cargo test
-"""
-
-
-def _cpp_job_block() -> str:
-    """Returns the YAML block for a C/C++ CI job (appended to Polyglot base)."""
-    return """
-  cpp-ci:
-    name: C/C++ Tests
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.25'
-
-      - name: Build CGO Bridges
-        run: |
-          if grep -q "^core:" Makefile; then make core; elif grep -q "^build:" Makefile; then make build; fi
-
-      - name: Build and Test C/C++
-        working-directory: cpp
-        run: make test
-"""
+def _detect_language_path(repo_path: Path, lang: str) -> Optional[str]:
+    """Checks for language folder in root or distconf/ and returns the relative path."""
+    # 1. Check Root Directory
+    if (repo_path / lang).is_dir():
+        return lang
+    # 2. Check distconf/
+    if (repo_path / "distconf" / lang).is_dir():
+        return f"distconf/{lang}"
+    # 3. Special Case: Python in root (detected by requirements.txt or setup.py)
+    if lang == "python":
+        if (repo_path / "requirements.txt").exists() or (repo_path / "setup.py").exists():
+            return "."
+            
+    return None
 
 
 def template_repo(repo: Dict[str, Any], templates_dir: Path) -> str:
@@ -341,7 +278,11 @@ def template_repo(repo: Dict[str, Any], templates_dir: Path) -> str:
     workflows_dir.mkdir(exist_ok=True)
     
     # Archetype Detection
-    is_polyglot = (path / "python").exists() or (path / "rust").exists() or (path / "cpp").exists()
+    python_path = _detect_language_path(path, "python")
+    rust_path = _detect_language_path(path, "rust")
+    cpp_path = _detect_language_path(path, "cpp")
+    
+    is_polyglot = any([python_path, rust_path, cpp_path])
     archetype = "Polyglot" if is_polyglot else "Microservice"
     archetype_dir = templates_dir / archetype
     
@@ -352,21 +293,25 @@ def template_repo(repo: Dict[str, Any], templates_dir: Path) -> str:
         with open(ci_src, "r", encoding='utf-8') as src:
             ci_content = src.read()
         
-        # For Polyglot repos, dynamically append language-specific jobs
+        # For Polyglot repos, dynamically append language-specific jobs from fragment templates
         if is_polyglot:
-            has_python = (path / "python").exists()
-            has_rust = (path / "rust").exists()
-            has_cpp = (path / "cpp").exists()
-            
-            if has_python:
-                ci_content += _python_job_block()
-            if has_rust:
-                ci_content += _rust_job_block()
-            if has_cpp:
-                ci_content += _cpp_job_block()
+            if python_path:
+                ci_content += _load_job_fragment("python", python_path, templates_dir)
+            if rust_path:
+                ci_content += _load_job_fragment("rust", rust_path, templates_dir)
+            if cpp_path:
+                ci_content += _load_job_fragment("cpp", cpp_path, templates_dir)
         
         with open(ci_dst, "w", encoding='utf-8') as dst:
             dst.write(ci_content)
+
+    # 1.5 Release Template (Polyglot only)
+    if is_polyglot:
+        rel_src = archetype_dir / "release.yml"
+        rel_dst = workflows_dir / "release.yml"
+        if rel_src.exists():
+            with open(rel_src, "r", encoding='utf-8') as src, open(rel_dst, "w", encoding='utf-8') as dst:
+                dst.write(src.read())
             
     # 2. Dependabot Template
     dep_src = archetype_dir / "dependabot.yml"
@@ -384,10 +329,10 @@ def template_repo(repo: Dict[str, Any], templates_dir: Path) -> str:
     
     # Build the archetype label with detected languages
     if is_polyglot:
-        langs = ["Go"]
-        if (path / "python").exists(): langs.append("Python")
-        if (path / "rust").exists(): langs.append("Rust")
-        if (path / "cpp").exists(): langs.append("C++")
+        langs = ["Go"] if (path / "go.mod").exists() else []
+        if python_path: langs.append("Python")
+        if rust_path: langs.append("Rust")
+        if cpp_path: langs.append("C++")
         label = "Polyglot: " + "+".join(langs)
     else:
         label = "Microservice"

@@ -43,9 +43,9 @@ def _find_workspace_root() -> Path:
     for parent in [current] + list(current.parents):
         if (parent / "Bastien-Antigravity.code-workspace").exists():
             return parent
-        if (parent / "obsidian-brain").is_dir() and (parent / "fleet-operation-brain").is_dir():
+        if (parent / "obsidian-brain").is_dir() and (parent / "universal-logger").is_dir():
             return parent
-    return Path(__file__).resolve().parents[2]
+    return Path(__file__).resolve().parents[3]
 
 # ### GIT HELPERS ###
 
@@ -239,6 +239,11 @@ def template_repo(repo: Dict[str, Any], templates_dir: Path) -> str:
     
     if not path.exists():
         return "[ {0} ] MISSING".format(name)
+        
+    # Exclusion Rule: Do not template knowledge-base repositories
+    excluded_repos = ["obsidian-brain", "01-Strategic-Nexus", "02-Business-BDD", "03-Tech-Stack", "04-Rapid-Prototyping", "05-Fleet-Operation", "07-Core-KMS"]
+    if name in excluded_repos:
+        return "[ {0} ] SKIP (Knowledge-Base)".format(name)
         
     github_dir = path / ".github"
     workflows_dir = github_dir / "workflows"

@@ -232,7 +232,7 @@ def audit_repo(repo: Dict[str, Any]) -> Dict[str, Any]:
 
 def template_repo(repo: Dict[str, Any], templates_dir: Path) -> str:
     """
-    Applies standard CI/CD templates to a repository.
+    Applies standard CI/CD templates to a repository with Archetype auto-detection.
     """
     path = Path(repo["path"])
     name = repo["name"]
@@ -246,21 +246,33 @@ def template_repo(repo: Dict[str, Any], templates_dir: Path) -> str:
     github_dir.mkdir(exist_ok=True)
     workflows_dir.mkdir(exist_ok=True)
     
+    # Archetype Detection
+    is_polyglot = (path / "python").exists() or (path / "rust").exists()
+    archetype = "Polyglot" if is_polyglot else "Microservice"
+    archetype_dir = templates_dir / archetype
+    
     # 1. CI Template
-    ci_src = templates_dir / "ci-standard.yml"
+    ci_src = archetype_dir / "ci.yml"
     ci_dst = workflows_dir / "ci.yml"
     if ci_src.exists():
         with open(ci_src, "r", encoding='utf-8') as src, open(ci_dst, "w", encoding='utf-8') as dst:
             dst.write(src.read())
             
     # 2. Dependabot Template
-    dep_src = templates_dir / "dependabot.yml"
+    dep_src = archetype_dir / "dependabot.yml"
     dep_dst = github_dir / "dependabot.yml"
     if dep_src.exists():
         with open(dep_src, "r", encoding='utf-8') as src, open(dep_dst, "w", encoding='utf-8') as dst:
             dst.write(src.read())
+
+    # 3. CODEOWNERS Template
+    co_src = templates_dir / "CODEOWNERS"
+    co_dst = github_dir / "CODEOWNERS"
+    if co_src.exists():
+        with open(co_src, "r", encoding='utf-8') as src, open(co_dst, "w", encoding='utf-8') as dst:
+            dst.write(src.read())
             
-    return "[ {0} ] TEMPLATED".format(name)
+    return "[ {0} ] TEMPLATED ({1})".format(name, archetype)
 
 # -----------------------------------------------------------------------------------------------
 

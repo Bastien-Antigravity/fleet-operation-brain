@@ -230,6 +230,95 @@ def audit_repo(repo: Dict[str, Any]) -> Dict[str, Any]:
 
 # ### FLEET UTILITIES ###
 
+def _python_job_block() -> str:
+    """Returns the YAML block for a Python CI job (appended to Polyglot base)."""
+    return """
+  python-ci:
+    name: Python Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Build CGO Bridges
+        run: |
+          if grep -q "^core:" Makefile; then make core; elif grep -q "^build:" Makefile; then make build; fi
+
+      - name: Test Python SDK
+        working-directory: python
+        run: |
+          pip install pytest build setuptools wheel
+          if [ -f setup.py ]; then python setup.py build_go; fi
+          pip install -e .
+          pytest
+"""
+
+
+def _rust_job_block() -> str:
+    """Returns the YAML block for a Rust CI job (appended to Polyglot base)."""
+    return """
+  rust-ci:
+    name: Rust Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+
+      - name: Build CGO Bridges
+        run: |
+          if grep -q "^core:" Makefile; then make core; elif grep -q "^build:" Makefile; then make build; fi
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.91
+
+      - name: Test Rust SDK
+        working-directory: rust
+        run: cargo test
+"""
+
+
+def _cpp_job_block() -> str:
+    """Returns the YAML block for a C/C++ CI job (appended to Polyglot base)."""
+    return """
+  cpp-ci:
+    name: C/C++ Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+
+      - name: Build CGO Bridges
+        run: |
+          if grep -q "^core:" Makefile; then make core; elif grep -q "^build:" Makefile; then make build; fi
+
+      - name: Build and Test C/C++
+        working-directory: cpp
+        run: make test
+"""
+
+
 def template_repo(repo: Dict[str, Any], templates_dir: Path) -> str:
     """
     Applies standard CI/CD templates to a repository with Archetype auto-detection.
@@ -260,8 +349,24 @@ def template_repo(repo: Dict[str, Any], templates_dir: Path) -> str:
     ci_src = archetype_dir / "ci.yml"
     ci_dst = workflows_dir / "ci.yml"
     if ci_src.exists():
-        with open(ci_src, "r", encoding='utf-8') as src, open(ci_dst, "w", encoding='utf-8') as dst:
-            dst.write(src.read())
+        with open(ci_src, "r", encoding='utf-8') as src:
+            ci_content = src.read()
+        
+        # For Polyglot repos, dynamically append language-specific jobs
+        if is_polyglot:
+            has_python = (path / "python").exists()
+            has_rust = (path / "rust").exists()
+            has_cpp = (path / "cpp").exists()
+            
+            if has_python:
+                ci_content += _python_job_block()
+            if has_rust:
+                ci_content += _rust_job_block()
+            if has_cpp:
+                ci_content += _cpp_job_block()
+        
+        with open(ci_dst, "w", encoding='utf-8') as dst:
+            dst.write(ci_content)
             
     # 2. Dependabot Template
     dep_src = archetype_dir / "dependabot.yml"
@@ -276,8 +381,18 @@ def template_repo(repo: Dict[str, Any], templates_dir: Path) -> str:
     if co_src.exists():
         with open(co_src, "r", encoding='utf-8') as src, open(co_dst, "w", encoding='utf-8') as dst:
             dst.write(src.read())
+    
+    # Build the archetype label with detected languages
+    if is_polyglot:
+        langs = ["Go"]
+        if (path / "python").exists(): langs.append("Python")
+        if (path / "rust").exists(): langs.append("Rust")
+        if (path / "cpp").exists(): langs.append("C++")
+        label = "Polyglot: " + "+".join(langs)
+    else:
+        label = "Microservice"
             
-    return "[ {0} ] TEMPLATED ({1})".format(name, archetype)
+    return "[ {0} ] TEMPLATED ({1})".format(name, label)
 
 # -----------------------------------------------------------------------------------------------
 

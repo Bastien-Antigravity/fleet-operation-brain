@@ -232,7 +232,21 @@ def audit_repo(repo: Dict[str, Any]) -> Dict[str, Any]:
         except Exception:
             run_status = "ERR NETWORK"
     
-    return {"name": name, "ci": "✅" if ci_exists else "❌", "dep": "✅" if dep_exists else "❌", "ai": "✅" if ai_exists else "❌", "run": run_status}
+    # Map conclusion/status to visual icons
+    status_icon = "🔘" # Default for NONE/UNKNOWN
+    if run_status == "SUCCESS":
+        status_icon = "✅"
+    elif run_status in ["FAILURE", "CANCELLED", "TIMED_OUT", "ACTION_REQUIRED"]:
+        status_icon = "❌"
+    elif run_status in ["IN_PROGRESS", "QUEUED", "WAITING"]:
+        status_icon = "⏳"
+    elif "ERR" in run_status or run_status == "UNKNOWN":
+        status_icon = "⚠️"
+    
+    # Return formatted status with icon
+    display_status = f"{status_icon} {run_status}"
+    
+    return {"name": name, "ci": "✅" if ci_exists else "❌", "dep": "✅" if dep_exists else "❌", "ai": "✅" if ai_exists else "❌", "run": display_status}
 
 # ### FLEET UTILITIES ###
 

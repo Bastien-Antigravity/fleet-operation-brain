@@ -277,6 +277,16 @@ def template_repo(repo: Dict[str, Any], templates_dir: Path) -> str:
     github_dir.mkdir(exist_ok=True)
     workflows_dir.mkdir(exist_ok=True)
     
+    # Legacy Purge: Remove obsolete files to prevent duplicate runs
+    legacy_files = [
+        workflows_dir / "ci-cd.yml",
+        workflows_dir / "master-ci.yml",
+        github_dir / "workflows/ci-cd.yml" # Redundant check
+    ]
+    for legacy in legacy_files:
+        if legacy.exists():
+            legacy.unlink()
+    
     # Archetype Detection
     python_path = _detect_language_path(path, "python")
     rust_path = _detect_language_path(path, "rust")

@@ -26,6 +26,12 @@ from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 from typing import List, Dict, Any, Optional, Tuple
 
+# ### FLEET CONFIGURATION (GLOBAL PARAMETERS) ###
+GO_VERSION = "1.25"
+PYTHON_VERSION = "3.12"
+RUST_VERSION = "1.91"
+CPP_VERSION = "20"  # C++ Standard
+
 # Standardize terminal output encoding for Windows
 if sysStdout.encoding != 'utf-8':
     try:
@@ -233,10 +239,16 @@ def audit_repo(repo: Dict[str, Any]) -> Dict[str, Any]:
 def _load_job_fragment(name: str, working_dir: str, templates_dir: Path) -> str:
     """Loads a YAML fragment from the templates directory and injects the working directory."""
     frag_path = templates_dir / "Polyglot" / "jobs" / f"{name}.yml"
+
     if frag_path.exists():
         with open(frag_path, "r", encoding='utf-8') as f:
             content = f.read()
-        return content.replace("{{WORKING_DIR}}", working_dir)
+        content = content.replace("{{WORKING_DIR}}", working_dir)
+        content = content.replace("{{GO_VERSION}}", GO_VERSION)
+        content = content.replace("{{PYTHON_VERSION}}", PYTHON_VERSION)
+        content = content.replace("{{RUST_VERSION}}", RUST_VERSION)
+        content = content.replace("{{CPP_VERSION}}", CPP_VERSION)
+        return content
     return ""
 
 
@@ -300,6 +312,28 @@ def template_repo(repo: Dict[str, Any], templates_dir: Path) -> str:
         with open(ci_src, "r", encoding='utf-8') as src:
             ci_content = src.read()
         
+        # Injected Archetype Label with detected languages
+        if is_polyglot:
+            langs = []
+            if go_path: langs.append("Go")
+            if python_path: langs.append("Python")
+            if rust_path: langs.append("Rust")
+            if cpp_path: langs.append("C++")
+            label = "Polyglot: " + "+".join(langs)
+        else:
+            label = "Microservice"
+
+        # Update Header and Name
+        header_params = f"Go:{GO_VERSION}, Py:{PYTHON_VERSION}, Rust:{RUST_VERSION}, C++:{CPP_VERSION}"
+        ci_content = ci_content.replace("# [FLEET-ARCHITECT] Standardized Polyglot CI", f"# [FLEET-ARCHITECT] {label} ({header_params})")
+        ci_content = ci_content.replace("# [FLEET-ARCHITECT] Standardized Microservice CI", f"# [FLEET-ARCHITECT] {label} ({header_params})")
+        
+        # Inject Versions into base if needed
+        ci_content = ci_content.replace("{{GO_VERSION}}", GO_VERSION)
+        ci_content = ci_content.replace("{{PYTHON_VERSION}}", PYTHON_VERSION)
+        ci_content = ci_content.replace("{{RUST_VERSION}}", RUST_VERSION)
+        ci_content = ci_content.replace("{{CPP_VERSION}}", CPP_VERSION)
+
         # For Polyglot repos, dynamically append language-specific jobs from fragment templates
         if is_polyglot:
             if go_path:

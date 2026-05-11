@@ -383,6 +383,13 @@ def template_repo(repo: Dict[str, Any], templates_dir: Path) -> str:
     if co_src.exists():
         with open(co_src, "r", encoding='utf-8') as src, open(co_dst, "w", encoding='utf-8') as dst:
             dst.write(src.read())
+            
+    # 4. Global golangci-lint Template
+    lint_src = templates_dir / "golangci-global.yml"
+    lint_dst = path / ".golangci.yml"
+    if lint_src.exists():
+        with open(lint_src, "r", encoding='utf-8') as src, open(lint_dst, "w", encoding='utf-8') as dst:
+            dst.write(src.read())
     
     # Build the archetype label with detected languages
     if is_polyglot:

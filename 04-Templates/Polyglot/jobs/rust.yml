@@ -1,46 +1,7 @@
   rust-ci:
-    name: Rust Tests
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '{{GO_VERSION}}'
-
-      - name: Download Core Library (If Native Provider)
-        uses: actions/download-artifact@v4
-        continue-on-error: true
-        with:
-          name: libdistconf
-          path: distributed-config/distconf/libdistconf/
-
-      - name: Checkout Distributed Config (If External Consumer)
-        if: github.repository != 'Bastien-Antigravity/distributed-config'
-        uses: actions/checkout@v4
-        with:
-          repository: Bastien-Antigravity/distributed-config
-          path: distributed-config
-          ref: develop
-
-      - name: Build Distributed Config Library (If External Consumer)
-        if: github.repository != 'Bastien-Antigravity/distributed-config'
-        working-directory: distributed-config
-        run: make build-lib
-
-      - name: Build CGO Bridges
-        run: |
-          if grep -q "^core:" Makefile; then make core; elif grep -q "^build:" Makefile; then make build; fi
-
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: {{RUST_VERSION}}
-
-      - name: Test Rust SDK
-        working-directory: {{WORKING_DIR}}
-        env:
-          LIBDISTCONF_PATH: ${{ github.repository == 'Bastien-Antigravity/distributed-config' && format('{0}/distconf/libdistconf/libdistconf.so', github.workspace) || format('{0}/distributed-config/distconf/libdistconf/libdistconf.so', github.workspace) }}
-        run: cargo test
+    uses: Bastien-Antigravity/fleet-operation-brain/.github/workflows/workflow-rust.yml@develop
+    with:
+      working_directory: '{{WORKING_DIR}}'
+      rust_version: '{{RUST_VERSION}}'
+      go_version: '{{GO_VERSION}}'
+    secrets: inherit

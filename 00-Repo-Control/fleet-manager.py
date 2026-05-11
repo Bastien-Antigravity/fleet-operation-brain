@@ -347,6 +347,12 @@ def template_repo(repo: Dict[str, Any], templates_dir: Path) -> str:
         ci_content = ci_content.replace("{{PYTHON_VERSION}}", PYTHON_VERSION)
         ci_content = ci_content.replace("{{RUST_VERSION}}", RUST_VERSION)
         ci_content = ci_content.replace("{{CPP_VERSION}}", CPP_VERSION)
+        
+        # For Microservices, inject the detected Go path into the base template
+        if not is_polyglot and go_path:
+            ci_content = ci_content.replace("{{WORKING_DIR}}", go_path)
+        elif not is_polyglot:
+            ci_content = ci_content.replace("{{WORKING_DIR}}", ".")
 
         # For Polyglot repos, dynamically append language-specific jobs from fragment templates
         if is_polyglot:

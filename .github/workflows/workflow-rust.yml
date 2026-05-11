@@ -16,6 +16,9 @@ on:
         type: string
         default: '1.25'
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   verify:
     name: Rust Verification

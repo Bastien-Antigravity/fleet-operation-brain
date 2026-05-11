@@ -19,3 +19,6 @@ This index auto-aggregates previously orphaned files.
 - [[LOG-2026-05-04-Fleet-Sync-Final]]
 - [[LOG-2026-05-04-Standardization]]
 - [[LOG-2026-05-04-Test-Sync]]
+- [[LOG-2026-05-08-Fleet-Sync]]
+- [[LOG-2026-05-09-Fleet-Sync]]
+- [[LOG-2026-05-11-CI-Modernization]]

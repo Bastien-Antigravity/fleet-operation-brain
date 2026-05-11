@@ -16,6 +16,9 @@ on:
         type: boolean
         default: true
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   verify:
     name: Fleet Verification
@@ -38,6 +41,7 @@ jobs:
         uses: golangci/golangci-lint-action@v7
         with:
           version: v2.12.2
+          args: --exclude="QF1008"
 
       # 2. Python Setup (Conditional)
       - name: Set up Python

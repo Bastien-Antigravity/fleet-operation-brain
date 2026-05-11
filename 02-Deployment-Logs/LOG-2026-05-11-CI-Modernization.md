@@ -21,6 +21,7 @@ tags:
 - **Global Linter**: Centralized the `golangci-lint` configuration into `.golangci-global.yml`. Modified `fleet-manager.py` to distribute this config as `.golangci.yml` to all 25 fleet repositories.
 - **Node.js 24 Migration**: Proactively opted into Node.js 24 for all GitHub Actions by setting `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true` in the centralized reusable workflows to avoid upcoming Node.js 20 deprecation issues.
 - **Docker Standardization**: Standardized runtime environments (Alpine 3.20) across the fleet while preserving specialized requirements for `orchestrator` (`golang:1.25.4-alpine3.22`) and `enhanced-backtesting` (`python:3.12-slim-bullseye`).
+- **Polyglot CI Robustness**: Patched reusable workflows (`workflow-python.yml`, etc.) to correctly build CGO bridges by searching for the root `Makefile` when running in subdirectories. This resolves `FileNotFoundError` for shared libraries in polyglot repos like `safe-socket`.
 
 ## Execution
 1. Atomic Vault Sync ran for `obsidian-brain` to push workflows.

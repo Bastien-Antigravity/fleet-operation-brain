@@ -52,7 +52,11 @@ jobs:
 
       - name: Build CGO Bridges
         run: |
-          if grep -q "^core:" Makefile 2>/dev/null; then make core; elif grep -q "^build:" Makefile 2>/dev/null; then make build; fi
+          if [ -f Makefile ]; then
+            if grep -q "^core:" Makefile 2>/dev/null; then make core; elif grep -q "^build:" Makefile 2>/dev/null; then make build; fi
+          elif [ -f ../Makefile ]; then
+            if grep -q "^core:" ../Makefile 2>/dev/null; then make -C .. core; elif grep -q "^build:" ../Makefile 2>/dev/null; then make -C .. build; fi
+          fi
 
       - name: Build and Test C/C++
         env:

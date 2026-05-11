@@ -1,4 +1,5 @@
 # [FLEET-ARCHITECT] Standardized Microservice CI
+# Sync-ID: 2026-05-11-GLOBAL-001
 name: Fleet CI
 on:
   push:
@@ -10,5 +11,5 @@ jobs:
   go-ci:
     uses: Bastien-Antigravity/fleet-operation-brain/.github/workflows/workflow-go.yml@develop
     with:
-      working_directory: '.'
+      working_directory: '{{WORKING_DIR}}'
     secrets: inherit

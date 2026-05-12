@@ -151,6 +151,12 @@
       "path": "./web-interface",
       "remote": "https://github.com/Bastien-Antigravity/web-interface.git",
       "master_branch": "develop"
+    },
+    {
+      "name": "ontime-scheduler",
+      "path": "./ontime-scheduler",
+      "remote": "https://github.com/Bastien-Antigravity/ontime-scheduler.git",
+      "master_branch": "develop"
     }
   ]
 }

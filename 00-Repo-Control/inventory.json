@@ -6,19 +6,19 @@
       "name": "01-Strategic-Nexus",
       "path": "./obsidian-brain/01-Strategic-Nexus",
       "remote": "https://github.com/Bastien-Antigravity/nexus-strategic-brain.git",
-      "master_branch": "develop"
+      "master_branch": "HEAD"
     },
     {
       "name": "02-Business-BDD",
       "path": "./obsidian-brain/02-Business-BDD",
       "remote": "https://github.com/Bastien-Antigravity/business-bdd-brain.git",
-      "master_branch": "develop"
+      "master_branch": "HEAD"
     },
     {
       "name": "03-Tech-Stack",
       "path": "./obsidian-brain/03-Tech-Stack",
       "remote": "https://github.com/Bastien-Antigravity/tech-stack-brain.git",
-      "master_branch": "develop"
+      "master_branch": "HEAD"
     },
     {
       "name": "04-Rapid-Prototyping",
@@ -30,13 +30,13 @@
       "name": "05-Fleet-Operation",
       "path": "./obsidian-brain/05-Fleet-Operation",
       "remote": "https://github.com/Bastien-Antigravity/fleet-operation-brain.git",
-      "master_branch": "develop"
+      "master_branch": "HEAD"
     },
     {
       "name": "07-Core-KMS",
       "path": "./obsidian-brain/07-Core-KMS",
       "remote": "https://github.com/Bastien-Antigravity/core-kms-brain.git",
-      "master_branch": "develop"
+      "master_branch": "HEAD"
     },
     {
       "name": "config-server",
@@ -99,6 +99,12 @@
       "master_branch": "develop"
     },
     {
+      "name": "mt5-gateway",
+      "path": "./mt5-gateway",
+      "remote": "https://github.com/Bastien-Antigravity/mt5-gateway.git",
+      "master_branch": "develop"
+    },
+    {
       "name": "notif-server",
       "path": "./notif-server",
       "remote": "https://github.com/Bastien-Antigravity/notif-server.git",
@@ -108,6 +114,12 @@
       "name": "obsidian-brain",
       "path": "./obsidian-brain",
       "remote": "https://github.com/Bastien-Antigravity/obsidian-brain",
+      "master_branch": "develop"
+    },
+    {
+      "name": "ontime-scheduler",
+      "path": "./ontime-scheduler",
+      "remote": "https://github.com/Bastien-Antigravity/ontime-scheduler.git",
       "master_branch": "develop"
     },
     {
@@ -150,18 +162,6 @@
       "name": "web-interface",
       "path": "./web-interface",
       "remote": "https://github.com/Bastien-Antigravity/web-interface.git",
-      "master_branch": "develop"
-    },
-    {
-      "name": "ontime-scheduler",
-      "path": "./ontime-scheduler",
-      "remote": "https://github.com/Bastien-Antigravity/ontime-scheduler.git",
-      "master_branch": "develop"
-    },
-    {
-      "name": "mt5-gateway",
-      "path": "./mt5-gateway",
-      "remote": "https://github.com/Bastien-Antigravity/mt5-gateway.git",
       "master_branch": "develop"
     }
   ]

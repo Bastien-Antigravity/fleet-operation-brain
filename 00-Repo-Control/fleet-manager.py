@@ -17,7 +17,7 @@ KEY PARAMETERS:
 - optimal_workers: Number of threads for parallel execution.
 """
 
-from sys import argv as sysArgv, executable as sysExecutable, stdout as sysStdout
+from sys import argv as sysArgv, executable as sysExecutable, stdout as sysStdout, exit as sysExit
 from os import getenv as osGetenv, walk as osWalk
 from os.path import exists as osPathExists, join as osPathJoin
 from json import load as jsonLoad, dump as jsonDump
@@ -58,14 +58,32 @@ def _find_workspace_root() -> Path:
 def run_git(path: Path, args: List[str], timeout: int = 30) -> Tuple[str, str, int]:
     """
     Executes a Git command in a specific directory.
+    Ensures non-interactive execution and injects GITHUB_TOKEN if available.
     """
+    import os
+    env = os.environ.copy()
+    env["GIT_TERMINAL_PROMPT"] = "0"
+    
+    token = get_github_token()
+    git_base = ["git", "-C", str(path)]
+    
+    # If a token is found and we are doing a remote operation, inject it via credential helper
+    if token and any(cmd in args for cmd in ["push", "pull", "fetch", "clone"]):
+        # Use -c to set a temporary credential helper for this command only
+        # This avoids the "Device not configured" error by providing the token
+        git_base += [
+            "-c", "credential.helper=", 
+            "-c", f"credential.helper=!f() {{ echo \"username=x-access-token\"; echo \"password={token}\"; }}; f"
+        ]
+
     try:
         result = subprocessRun(
-            ["git", "-C", str(path)] + args,
+            git_base + args,
             capture_output=True,
             text=True,
             check=False,
-            timeout=timeout
+            timeout=timeout,
+            env=env
         )
         return result.stdout.strip(), result.stderr.strip(), result.returncode
     except subprocessTimeoutExpired:
@@ -152,14 +170,24 @@ def sync_repo(repo: Dict[str, Any]) -> List[str]:
         if code != 0:
             logs.append("[ {0} ] SUBMODULE ERROR: {1}".format(name, err))
 
-    # 3. Push
-    logs.append("[ {0} ] Pushing {1}...".format(name, target_branch))
-    _, err, code = run_git(Path(path), ["push", "origin", target_branch])
-    if code != 0:
-        logs.append("[ {0} ] PUSH FAILED: {1}".format(name, err))
-        return logs
-    
-    logs.append("[ {0} ] SYNCED ({1})".format(name, target_branch))
+    # 3. Push (Only if ahead)
+    ab_out, _, code = run_git(Path(path), ["rev-list", "--left-right", "--count", f"origin/{target_branch}...HEAD"])
+    ahead = 0
+    if code == 0:
+        parts = ab_out.split()
+        if len(parts) == 2:
+            ahead = int(parts[1])
+
+    if ahead > 0:
+        logs.append("[ {0} ] Pushing {1} ({2} commit(s) ahead)...".format(name, target_branch, ahead))
+        _, err, code = run_git(Path(path), ["push", "origin", target_branch])
+        if code != 0:
+            logs.append("[ {0} ] PUSH FAILED: {1}".format(name, err))
+            return logs
+        logs.append("[ {0} ] SYNCED & PUSHED ({1})".format(name, target_branch))
+    else:
+        logs.append("[ {0} ] UP-TO-DATE ({1})".format(name, target_branch))
+        
     return logs
 
 # ### GITHUB API HELPERS ###
@@ -178,6 +206,27 @@ def get_github_token() -> Optional[str]:
             return f.read().strip()
             
     return None
+
+def _ensure_auth() -> str:
+    """
+    Verifies that a GitHub token is available. 
+    If not, fails 'loudly' with clear instructions.
+    """
+    token = get_github_token()
+    if not token:
+        print("\n" + "!"*60)
+        print("🚨 FLEET COMMANDER: AUTHENTICATION REQUIRED")
+        print("!"*60)
+        print("You are attempting a remote operation that requires GitHub credentials.")
+        print("To proceed, please provide a Personal Access Token (PAT).")
+        print("\nOption A (Environment Variable):")
+        print("   export GITHUB_TOKEN=your_token_here")
+        print("\nOption B (Hidden File):")
+        print("   echo 'your_token_here' > ~/.github_token")
+        print("\nNote: Ensure the token has 'repo' and 'workflow' permissions.")
+        print("!"*60 + "\n")
+        sysExit(1)
+    return token
 
 # -----------------------------------------------------------------------------------------------
 
@@ -490,6 +539,10 @@ def main() -> None:
     
     command = sysArgv[1] if len(sysArgv) > 1 else "status"
 
+    # Commands that require authentication
+    if command in ["sync", "vault-sync", "restore", "tag", "audit", "status"]:
+        _ensure_auth()
+
     if command == "discover":
         # Discover in the workspace root
         workspace_root = _find_workspace_root()
@@ -643,12 +696,23 @@ def main() -> None:
             print(f"[ {name} ] Pulling latest...")
             run_git(sub, ["pull", "--rebase", "origin", "develop"])
             
-            print(f"[ {name} ] Pushing to origin...")
-            _, err, code = run_git(sub, ["push", "origin", "develop"])
-            if code != 0:
-                print(f"[ {name} ] PUSH FAILED: {err}")
+            # 2. Push (Only if ahead)
+            ab_out, _, code = run_git(sub, ["rev-list", "--left-right", "--count", "origin/develop...HEAD"])
+            ahead = 0
+            if code == 0:
+                parts = ab_out.split()
+                if len(parts) == 2:
+                    ahead = int(parts[1])
+
+            if ahead > 0:
+                print(f"[ {name} ] Pushing {ahead} commit(s) to origin...")
+                _, err, code = run_git(sub, ["push", "origin", "develop"])
+                if code != 0:
+                    print(f"[ {name} ] PUSH FAILED: {err}")
+                else:
+                    print(f"[ {name} ] SYNCED.")
             else:
-                print(f"[ {name} ] SYNCED.")
+                print(f"[ {name} ] UP-TO-DATE.")
 
         # 2. Update parent pointer
         print("[ obsidian-brain ] Updating submodule pointers...")
@@ -658,12 +722,23 @@ def main() -> None:
             run_git(obsidian_dir, ["commit", "-m", "chore(fleet): update submodule pointers"])
             print("[ obsidian-brain ] Pointers committed.")
         
-        print("[ obsidian-brain ] Pushing vault to origin...")
-        _, err, code = run_git(obsidian_dir, ["push", "origin", "develop"])
+        # 3. Final Vault Push (Only if ahead)
+        ab_out, _, code = run_git(obsidian_dir, ["rev-list", "--left-right", "--count", "origin/develop...HEAD"])
+        ahead = 0
         if code == 0:
-            print("✨ Atomic Vault Sync Complete!")
+            parts = ab_out.split()
+            if len(parts) == 2:
+                ahead = int(parts[1])
+
+        if ahead > 0:
+            print(f"[ obsidian-brain ] Pushing {ahead} commit(s) to origin...")
+            _, err, code = run_git(obsidian_dir, ["push", "origin", "develop"])
+            if code == 0:
+                print("✨ Atomic Vault Sync Complete!")
+            else:
+                print(f"❌ Vault push failed: {err}")
         else:
-            print(f"❌ Vault push failed: {err}")
+            print("✨ Vault is already up-to-date.")
 
     elif command == "refresh":
         refresh_script = Path(__file__).resolve().parent / "fleet-refresh.py"

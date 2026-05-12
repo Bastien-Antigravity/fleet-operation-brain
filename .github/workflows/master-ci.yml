@@ -40,7 +40,7 @@ jobs:
         if: hashFiles('**/*.go') != ''
         uses: golangci/golangci-lint-action@v7
         with:
-          version: v2.12.2
+          version: v1.64.2
           args: --exclude="QF1008"
 
       # 2. Python Setup (Conditional)

@@ -157,6 +157,12 @@
       "path": "./ontime-scheduler",
       "remote": "https://github.com/Bastien-Antigravity/ontime-scheduler.git",
       "master_branch": "develop"
+    },
+    {
+      "name": "mt5-gateway",
+      "path": "./mt5-gateway",
+      "remote": "https://github.com/Bastien-Antigravity/mt5-gateway.git",
+      "master_branch": "develop"
     }
   ]
 }

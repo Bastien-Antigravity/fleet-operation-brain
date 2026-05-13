@@ -11,6 +11,16 @@ on:
         required: false
         type: string
         default: '1.25'
+      artifact_name:
+        description: "Name of the shared library artifact to upload (optional)"
+        required: false
+        type: string
+        default: ''
+      artifact_path:
+        description: "Path to the shared library binary for uploading"
+        required: false
+        type: string
+        default: ''
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -44,6 +54,22 @@ jobs:
         run: |
           go mod tidy
           go test -v -race ./...
+
+      - name: Build Shared Library (If exists)
+        run: |
+          if grep -q "^build-lib:" Makefile 2>/dev/null; then
+            make build-lib
+          elif grep -q "^core:" Makefile 2>/dev/null; then
+            make core
+          fi
+
+      - name: Upload Core Library Artifact
+        if: inputs.artifact_name != '' && inputs.artifact_path != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.artifact_name }}
+          path: ${{ inputs.artifact_path }}
+          if-no-files-found: ignore
 
       - name: Trigger Sandbox Verification
         if: inputs.working_directory == '.' && github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')

@@ -37,7 +37,7 @@ jobs:
       run:
         working-directory: ${{ inputs.working_directory }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up Go (For CGO Bridge)
         uses: actions/setup-go@v5
@@ -54,7 +54,7 @@ jobs:
 
       - name: Checkout Distributed Config (If External Consumer)
         if: github.repository != 'Bastien-Antigravity/distributed-config' && inputs.artifact_name == 'libdistconf'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: Bastien-Antigravity/distributed-config
           path: distributed-config

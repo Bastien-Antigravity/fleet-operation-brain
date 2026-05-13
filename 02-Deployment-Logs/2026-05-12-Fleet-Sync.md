@@ -1,3 +1,12 @@
+---
+microservice: obsidian-brain
+type: deployment
+status: completed
+tags:
+- '#type/deployment'
+- '#state/completed'
+---
+
 # Deployment Log: Fleet Synchronization
 
 - **Date:** 2026-05-12

@@ -461,6 +461,58 @@ def template_repo(repo: Dict[str, Any], templates_dir: Path) -> str:
 
 # -----------------------------------------------------------------------------------------------
 
+def cleanup_repo(repo: Dict[str, Any]) -> str:
+    """
+    Purges legacy CI/CD artifacts and non-standard workflows from a repository.
+    Ensures that only the FleetArchitect-approved 'KEEP_FILES' remain.
+    """
+    path = Path(repo["path"])
+    name = repo["name"]
+    
+    if not path.exists():
+        return "[ {0} ] MISSING".format(name)
+        
+    excluded_repos = ["obsidian-brain", "01-Strategic-Nexus", "02-Business-BDD", "03-Tech-Stack", "04-Rapid-Prototyping", "05-Fleet-Operation", "07-Core-KMS"]
+    if name in excluded_repos:
+        return "[ {0} ] SKIP (Knowledge-Base)".format(name)
+
+    # Standard files we want to PROTECT
+    KEEP_FILES = ["ci.yml", "release.yml", "dependabot.yml", "CODEOWNERS", ".golangci.yml"]
+    
+    # Legacy patterns to PURGE
+    LEGACY_PATTERNS = [".travis.yml", "appveyor.yml", ".circleci", "ci-cd.yml", "Jenkinsfile", ".jenkins", "main.yml", "build.yml"]
+
+    cleaned_items = []
+
+    # 1. Purge legacy root files/dirs
+    for pattern in LEGACY_PATTERNS:
+        item = path / pattern
+        if item.exists():
+            if item.is_dir():
+                import shutil
+                shutil.rmtree(item)
+            else:
+                item.unlink()
+            cleaned_items.append(pattern)
+
+    # 2. Purge non-standard workflows
+    workflow_dir = path / ".github" / "workflows"
+    if workflow_dir.exists():
+        for item in workflow_dir.iterdir():
+            if item.name not in KEEP_FILES:
+                if item.is_dir():
+                    import shutil
+                    shutil.rmtree(item)
+                else:
+                    item.unlink()
+                cleaned_items.append(f".github/workflows/{item.name}")
+
+    if cleaned_items:
+        return "[ {0} ] CLEANED: {1}".format(name, ", ".join(cleaned_items))
+    return "[ {0} ] ALREADY CLEAN".format(name)
+
+# -----------------------------------------------------------------------------------------------
+
 def discover_repos(root_dir: Path) -> List[Dict[str, Any]]:
     """
     Scans for all directories containing .git and updates inventory.
@@ -648,6 +700,15 @@ def main() -> None:
             def _do_template(repo: Dict[str, Any]) -> str:
                 return template_repo(repo, templates_dir)
             results = list(executor.map(_do_template, inventory["repositories"]))
+        for r in results: 
+            print(r)
+
+    elif command == "cleanup":
+        print("Starting Global Fleet Cleanup (Hygiene Mode)...")
+        with ThreadPoolExecutor(max_workers=optimal_workers) as executor:
+            def _do_cleanup(repo: Dict[str, Any]) -> str:
+                return cleanup_repo(repo)
+            results = list(executor.map(_do_cleanup, inventory["repositories"]))
         for r in results: 
             print(r)
 

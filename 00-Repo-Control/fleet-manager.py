@@ -153,8 +153,16 @@ def sync_repo(repo: Dict[str, Any]) -> List[str]:
     # Check branch safety
     current_branch, _, _ = run_git(Path(path), ["rev-parse", "--abbrev-ref", "HEAD"])
     if current_branch != target_branch:
-        logs.append("[ {0} ] SKIP: Currently on '{1}', but target is '{2}'. Skipping sync.".format(name, current_branch, target_branch))
-        return logs
+        # AUTO-ATTACH: If we are in detached HEAD or wrong branch, try to attach first
+        logs.append("[ {0} ] Branch mismatch (Current: {1}, Target: {2}). Attempting to attach...".format(name, current_branch, target_branch))
+        attach_logs = attach_repo(repo)
+        logs.extend(attach_logs)
+        
+        # Verify if attach worked
+        current_branch, _, _ = run_git(Path(path), ["rev-parse", "--abbrev-ref", "HEAD"])
+        if current_branch != target_branch:
+            logs.append("[ {0} ] SKIP: Could not attach to '{1}'. Skipping sync.".format(name, target_branch))
+            return logs
     
     # 1. Pull
     logs.append("[ {0} ] Pulling {1}...".format(name, target_branch))
@@ -188,6 +196,47 @@ def sync_repo(repo: Dict[str, Any]) -> List[str]:
     else:
         logs.append("[ {0} ] UP-TO-DATE ({1})".format(name, target_branch))
         
+    return logs
+
+def attach_repo(repo: Dict[str, Any]) -> List[str]:
+    """
+    Ensures a repository is on its designated master_branch.
+    Handles 'reattaching' from detached HEAD states.
+    """
+    path = repo["path"]
+    name = repo["name"]
+    target_branch = repo.get("master_branch", "develop")
+    logs = []
+
+    if not osPathExists(path):
+        logs.append("[ {0} ] ERROR: Path not found".format(name))
+        return logs
+
+    current_branch, _, _ = run_git(Path(path), ["rev-parse", "--abbrev-ref", "HEAD"])
+    
+    if current_branch == target_branch:
+        logs.append("[ {0} ] Already on {1}".format(name, target_branch))
+        return logs
+
+    # Check for uncommitted changes before switching
+    status_out, _, _ = run_git(Path(path), ["status", "--porcelain"])
+    if len(status_out) > 0:
+        logs.append("[ {0} ] CANNOT ATTACH: Uncommitted changes found. Please commit or stash first.".format(name))
+        return logs
+
+    logs.append("[ {0} ] Attaching to {1}...".format(name, target_branch))
+    _, err, code = run_git(Path(path), ["checkout", target_branch])
+    
+    if code != 0:
+        # If checkout failed, maybe the branch doesn't exist locally? Try fetching.
+        run_git(Path(path), ["fetch", "origin", target_branch])
+        _, err, code = run_git(Path(path), ["checkout", target_branch])
+        
+    if code == 0:
+        logs.append("[ {0} ] ATTACHED to {1}".format(name, target_branch))
+    else:
+        logs.append("[ {0} ] ATTACH FAILED: {1}".format(name, err))
+
     return logs
 
 # ### GITHUB API HELPERS ###
@@ -592,7 +641,7 @@ def main() -> None:
     command = sysArgv[1] if len(sysArgv) > 1 else "status"
 
     # Commands that require authentication
-    if command in ["sync", "vault-sync", "restore", "tag", "audit", "status"]:
+    if command in ["sync", "vault-sync", "restore", "tag", "audit", "status", "attach"]:
         _ensure_auth()
 
     if command == "discover":
@@ -621,10 +670,18 @@ def main() -> None:
             print("{0:<25} | {1:<15} | {2:<8} | {3:<5} | {4:<5} | {5:<5}".format(r['name'], r['branch'], r['status'], clean, r['ahead'], r['behind']))
 
     elif command == "sync":
-        print("Starting Global Fleet Sync...")
+        print("Starting Global Fleet Sync (with Auto-Attach)...")
         with ThreadPoolExecutor(max_workers=optimal_workers) as executor:
             results = list(executor.map(sync_repo, inventory["repositories"]))
         for repo_logs in results: 
+            for log in repo_logs:
+                print(log)
+
+    elif command == "attach":
+        print("Attaching fleet to designated branches...")
+        with ThreadPoolExecutor(max_workers=optimal_workers) as executor:
+            results = list(executor.map(attach_repo, inventory["repositories"]))
+        for repo_logs in results:
             for log in repo_logs:
                 print(log)
 

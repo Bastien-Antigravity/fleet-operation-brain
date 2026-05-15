@@ -495,6 +495,17 @@ def template_repo(repo: Dict[str, Any], templates_dir: Path) -> str:
         with open(lint_src, "r", encoding='utf-8') as src, open(lint_dst, "w", encoding='utf-8') as dst:
             dst.write(src.read())
     
+    # 5. Human Onboarding (quick-overview/) — Non-destructive: only creates if missing
+    overview_src = templates_dir / "quick-overview"
+    overview_dst = path / "quick-overview"
+    if overview_src.is_dir():
+        overview_dst.mkdir(exist_ok=True)
+        for tmpl_file in overview_src.iterdir():
+            target_file = overview_dst / tmpl_file.name
+            if not target_file.exists():
+                with open(tmpl_file, "r", encoding='utf-8') as src, open(target_file, "w", encoding='utf-8') as dst:
+                    dst.write(src.read())
+    
     # Build the archetype label with detected languages
     if is_polyglot:
         langs = []

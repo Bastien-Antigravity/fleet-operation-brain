@@ -3,6 +3,7 @@ microservice: fleet-operation-brain
 type: governance
 status: active
 tags:
+- \'#service/fleet-operation-brain\'
 - '#type/governance'
 - null
 - '#state/active'

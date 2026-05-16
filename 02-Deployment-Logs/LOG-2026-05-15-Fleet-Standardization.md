@@ -3,6 +3,7 @@ microservice: obsidian-brain
 type: deployment
 status: completed
 tags:
+- \'#service/obsidian-brain\'
 - '#type/deployment'
 - '#state/completed'
 ---

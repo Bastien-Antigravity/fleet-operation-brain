@@ -3,6 +3,7 @@ microservice: obsidian-brain
 type: fleet-op
 status: completed
 tags:
+- \'#service/obsidian-brain\'
 - '#type/fleet-op'
 - '#state/completed'
 ---

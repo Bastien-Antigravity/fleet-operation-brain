@@ -4,6 +4,7 @@ type: fleet-log
 status: active
 date: 2026-05-11
 tags:
+- \'#service/fleet-operation-brain\'
 - '#fleet-log'
 - '#ci-cd'
 - '#type/log'

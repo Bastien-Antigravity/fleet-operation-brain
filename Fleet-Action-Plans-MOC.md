@@ -3,6 +3,7 @@ microservice: fleet-action-plans-moc
 type: moc
 status: active
 tags:
+- \'#service/fleet-action-plans-moc\'
 - '#state/active'
 - null
 - '#type/moc'

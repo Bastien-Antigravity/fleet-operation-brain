@@ -14,7 +14,7 @@ tags:
 ## 🏗️ Repo Creation Protocol
 When the Fleet Commander initializes a new repository, it MUST include:
 1.  **AI-Init.md**: Context for the AI assistant.
-2.  **.github/dependabot.yml**: From the `04-Templates` folder.
+2.  **.github/dependabot.yml**: Standardized Dependabot schema configuration.
 3.  **LICENSE & README**: Standardized ecosystem headers.
 4.  **Initial Branches**: Create `main` and `develop` immediately.
 

@@ -34,6 +34,6 @@ Every repository must execute these three stages (locally or via GitHub Actions)
 - **Warning**: Failures in Stage 3 on "non-hardened" repositories may be bypassed with Architect approval, but MUST be logged.
 
 ## 🛠️ CI Maintenance & Templates
-- **Standard Template**: Every repository MUST use the `.github/workflows/ci-standard.yml` provided in the `04-Templates` folder.
-- **Global Updates**: When the Fleet Commander updates the `ci-standard.yml` template, they MUST propagate the change to all repositories in the `inventory.json`.
+- **Standard Template**: Every repository MUST use a delegate workflow `.github/workflows/ci.yml` that inherits from the centralized `master-ci.yml` template located in `fleet-operation-brain/.github/workflows/`.
+- **Global Updates**: When the Fleet Architect updates the centralized `master-ci.yml` template, the entire fleet automatically inherits the compliance upgrades.
 - **Secrets**: CI workflows must NEVER contain hardcoded tokens. Use `secrets.GITHUB_TOKEN` or Organization-level secrets.

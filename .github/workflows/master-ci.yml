@@ -152,15 +152,22 @@ jobs:
         if: matrix.language == 'cpp'
         run: |
           for dir in $(find . -maxdepth 3 -name "Makefile" -exec dirname {} \; | sort -u); do
-            echo "========================================"
-            echo "Building/Testing CPP in $dir"
-            echo "========================================"
-            cd "$dir"
-            # Attempt to run test if test target exists in makefile and it's not the root go makefile
-            if [ "$dir" != "." ] && grep -q "^test:" Makefile 2>/dev/null; then
-              make test
+            # Skip root directory
+            if [ "$dir" = "." ]; then continue; fi
+            
+            # Check if this Makefile directory actually contains C/C++ source files
+            if find "$dir" -maxdepth 2 \( -name "*.cpp" -o -name "*.cc" -o -name "*.c" \) | grep -q .; then
+              if grep -q "^test:" "$dir/Makefile" 2>/dev/null; then
+                echo "========================================"
+                echo "Building/Testing CPP in $dir"
+                echo "========================================"
+                cd "$dir"
+                make test
+                cd - > /dev/null
+              fi
+            else
+              echo "Skipping non-C++ Makefile directory: $dir"
             fi
-            cd - > /dev/null
           done
 
       # ---------------------------------------------------------

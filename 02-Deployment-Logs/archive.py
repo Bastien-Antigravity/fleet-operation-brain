@@ -102,7 +102,7 @@ def run_archive() -> None:
                 f"# Deployment Logs MOC\n\n"
                 f"This index manages active deployment logs.\n\n"
                 f"### Active Deployment Log\n"
-                f"- [[LOG-2026-05-20-CI-Restoration]]\n\n"
+                f"- [[{latest_log['path'].stem}]]\n\n"
                 f"### Archived Historical Logs\n"
                 f"> Archived logs are stored in the `deployments/` firewall zone to maintain minimal context weight.\n"
             )

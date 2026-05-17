@@ -20,7 +20,7 @@ The fleet command center orchestrates multi-repository operations, enforces meta
 
 ### 1. Dynamic Registry Discovery
 - **Action**: Runs `python3 fleet-manager.py discover` to scan the workspace directories.
-- **Behavior**: Auto-detects directories containing `.git` folders or submodule files, retrieves remote URLs and active branches, and dynamically updates [inventory.json](file:///Users/imac/Desktop/Bastien-Antigravity/obsidian-brain/05-Fleet-Operation/00-Repo-Control/inventory.json).
+- **Behavior**: Auto-detects directories containing `.git` folders or submodule files, retrieves remote URLs and active branches, and dynamically updates [inventory.json](../00-Repo-Control/inventory.json).
 
 ### 2. Multi-Repository Synchronization
 - **Action**: Runs `python3 fleet-manager.py sync` or `commit "<msg>"`.
@@ -35,6 +35,6 @@ The fleet command center orchestrates multi-repository operations, enforces meta
 ### 4. Zero-Friction Context Housekeeping (Log & Plan Archivers)
 - **Problem**: Historical deployment logs and finalized action plans bloat AI model context windows, increasing latency and token overhead.
 - **Solution**: 
-  - **Auto-Housekeeping**: `fleet-commander.py` has startup hooks that automatically trigger `archive.py` inside both [02-Deployment-Logs](file:///Users/imac/Desktop/Bastien-Antigravity/obsidian-brain/05-Fleet-Operation/02-Deployment-Logs/) and [01-Fleet-Action-Plans](file:///Users/imac/Desktop/Bastien-Antigravity/obsidian-brain/05-Fleet-Operation/01-Fleet-Action-Plans/).
+  - **Auto-Housekeeping**: `fleet-commander.py` has startup hooks that automatically trigger `archive.py` inside both [02-Deployment-Logs](../02-Deployment-Logs/) and [01-Fleet-Action-Plans](../01-Fleet-Action-Plans/).
   - **Context Firewalls**: It moves old logs and completed plans into `deployments/` and `plans/` folders, dynamically generating `.aiignore`, `.mcpignore`, and `.geminiignore` containing `*` to block all model indexing inside these archive directories.
   - **Active MOCs**: Automatically rewrites both MOC indices to only link to currently active logs and migration plans, maintaining pristine and zero-friction graph connections.

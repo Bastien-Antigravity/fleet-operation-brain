@@ -27,7 +27,7 @@ Philosophy, operational rules, and development details for maintaining the Basti
 
 ### 1. Dynamic Exclusion Principle
 - **Compliance Bypasses**: Strictly avoid hardcoding static exclusion lists in scripts (e.g., `fleet-commander.py`, `fleet-manager.py`). 
-- **Centralization**: If a repository does not represent a standard microservice and should bypass strict compliance audits (such as knowledge bases), simply assign `"exclude_from_compliance": true` in [inventory.json](file:///Users/imac/Desktop/Bastien-Antigravity/obsidian-brain/05-Fleet-Operation/00-Repo-Control/inventory.json). The entire command infrastructure evaluates this property at runtime.
+- **Centralization**: If a repository does not represent a standard microservice and should bypass strict compliance audits (such as knowledge bases), simply assign `"exclude_from_compliance": true` in [inventory.json](../00-Repo-Control/inventory.json). The entire command infrastructure evaluates this property at runtime.
 
 ### 2. Submodule Pointer Integrity
 - **Submodule Changes**: When making changes inside `05-Fleet-Operation` (which is a Git submodule), always commit and push the changes inside `05-Fleet-Operation` first.

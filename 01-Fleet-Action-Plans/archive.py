@@ -13,6 +13,22 @@ DATA FLOW:
 4. Generates ignore files (.aiignore, .mcpignore, .geminiignore) inside the plans/ folder.
 5. Updates the Fleet-Action-Plans-MOC.md file.
 """
+import os, sys
+# Ensure we are running inside the virtual environment
+_venv_dir = os.path.dirname(os.path.abspath(__file__))
+while _venv_dir and _venv_dir != '/' and not os.path.exists(os.path.join(_venv_dir, ".venv")):
+    _parent = os.path.dirname(_venv_dir)
+    if _parent == _venv_dir:
+        break
+    _venv_dir = _parent
+_venv_python = os.path.join(_venv_dir, ".venv", "Scripts", "python.exe") if os.name == "nt" else os.path.join(_venv_dir, ".venv", "bin", "python3")
+if os.path.exists(_venv_python):
+    try:
+        if not os.path.samefile(sys.executable, _venv_python):
+            os.execl(_venv_python, _venv_python, *sys.argv)
+    except OSError:
+        pass
+
 
 from re import match as reMatch, search as reSearch
 from shutil import move as shutilMove

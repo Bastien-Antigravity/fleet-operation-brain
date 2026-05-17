@@ -11,7 +11,10 @@ tags:
 
 # Fleet Action Plans MOC
 
-This index aggregates fleet-wide action plans and migration strategies.
+This index manages active and historical fleet migrations.
 
-- [[FAP-2026-05-03-GitHub-Sync]]
-- [[2026-05-11-Standardize-GitHub-CI]]
+### Active Migration Plans
+*None currently active.*
+
+### Archived Historical Plans
+> Archived plans are stored in the `plans/` firewall zone to maintain minimal context weight.

@@ -5,6 +5,9 @@ status: active
 tags:
 - '#ai/ignore'
 - '#service/fleet-operation-brain'
+- '#type/architecture'
+- '#state/active'
+- '#zone/3-fleet'
 ---
 
 # 📡 Zone 3 (Fleet) Command Center: Architecture Overview

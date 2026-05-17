@@ -5,8 +5,8 @@ status: active
 tags:
 - '#service/obsidian-brain'
 - '#type/fleet-op'
-- null
 - '#state/active'
+- '#zone/3-fleet'
 ---
 
 # 📡 Fleet Strategy: CI Protocols

@@ -4,6 +4,11 @@ type: deployment-log
 status: completed
 mission_id: CI-RESTORE
 date: 2026-05-20
+tags:
+- '#service/fleet-operation-brain'
+- '#type/deployment-log'
+- '#state/active'
+- '#zone/3-fleet'
 ---
 
 # 🚀 Deployment Log: CI-RESTORE

@@ -3,10 +3,10 @@ microservice: deployment-logs-moc
 type: moc
 status: active
 tags:
-- \'#service/deployment-logs-moc\'
+- '#service/deployment-logs-moc'
 - '#state/active'
-- null
 - '#type/moc'
+- '#zone/3-fleet'
 ---
 
 # Deployment Logs MOC

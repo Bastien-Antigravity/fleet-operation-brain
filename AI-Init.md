@@ -5,8 +5,8 @@ status: active
 tags:
 - '#service/fleet-operation-brain'
 - '#type/governance'
-- null
 - '#state/active'
+- '#zone/3-fleet'
 ---
 
 # ⚡ AI Initialization: fleet-operation-brain

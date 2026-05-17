@@ -3,10 +3,10 @@ microservice: fleet-operation-brain
 type: fleet-op
 status: active
 tags:
-- \'#service/fleet-operation-brain\'
+- '#service/fleet-operation-brain'
 - '#type/fleet-op'
-- null
 - '#state/active'
+- '#zone/3-fleet'
 ---
 
 # 🛰️ Zone 3: Fleet Operations Brain (Orchestrator Mode)

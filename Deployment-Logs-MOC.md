@@ -11,16 +11,10 @@ tags:
 
 # Deployment Logs MOC
 
-This index auto-aggregates previously orphaned files.
+This index manages active deployment logs.
 
-- [[LOG-2026-05-03-Fleet-Sync]]
-- [[LOG-2026-05-04-CICD-Test]]
-- [[LOG-2026-05-04-Develop-Sync]]
-- [[LOG-2026-05-04-Fleet-Sync]]
-- [[LOG-2026-05-04-Fleet-Sync-Final]]
-- [[LOG-2026-05-04-Standardization]]
-- [[LOG-2026-05-04-Test-Sync]]
-- [[LOG-2026-05-08-Fleet-Sync]]
-- [[LOG-2026-05-09-Fleet-Sync]]
-- [[LOG-2026-05-11-CI-Modernization]]
-- [[2026-05-12-Fleet-Sync]]
+### Active Deployment Log
+- [[LOG-2026-05-20-CI-Restoration]]
+
+### Archived Historical Logs
+> Archived logs are stored in the `deployments/` firewall zone to maintain minimal context weight.

@@ -20,11 +20,10 @@ Welcome to the **Strategic Command Deck**. This brain is the cockpit for mass-ex
 4. **Log**: Record the outcome and version updates in `02-Deployment-Logs/`.
 
 ## 📂 Structure
-- `01-Fleet-Action-Plans/`: Strategy docs for multi-repo changes.
-- `02-Deployment-Logs/`: Historical record of what was changed and where.
-- `03-Migration-States/`: Current progress of ongoing fleet-wide transitions (e.g., "SafeSocket v2 Migration").
-- `04-Templates/`: Standard formats for Action Plans and Post-Mortems.
-- `05-Fleet-Strategy/`: Global laws for GitHub, CI, and CD Standards.
+- `00-Repo-Control/`: Scripts, registries, and configuration control tools for the fleet.
+- `01-Fleet-Action-Plans/`: Strategy docs and action plans for multi-repository updates.
+- `02-Deployment-Logs/`: Historical audit logs of fleet modifications and deployment reports.
+- `05-Fleet-Strategy/`: Global conventions, laws, and CI/CD standardization policies.
 
 ## 🚦 Fleet Status
 - **Repositories**: See `00-Repo-Control/inventory.json` for the live registry.

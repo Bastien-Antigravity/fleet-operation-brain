@@ -1,0 +1,61 @@
+{
+  "fleet_name": "Bastien-Antigravity",
+  "registry": "ghcr.io/bastien-antigravity",
+  "services": {
+    "infrastructure": [
+      {
+        "name": "timescale-db",
+        "image": "timescale/timescaledb-ha:pg18",
+        "default_port": 5432,
+        "protocol": "PostgreSQL",
+        "health_check": "pg_isready"
+      },
+      {
+        "name": "nats-server",
+        "image": "nats:2.12.6-alpine3.22",
+        "default_port": 4222,
+        "monitoring_port": 8222,
+        "protocol": "NATS",
+        "health_check": "HTTP"
+      }
+    ],
+    "application": [
+      {
+        "name": "config-server",
+        "image": "ghcr.io/bastien-antigravity/config-server",
+        "default_port": 1862,
+        "protocol": "SafeSocket",
+        "archetype": "Microservice"
+      },
+      {
+        "name": "log-server",
+        "image": "ghcr.io/bastien-antigravity/log-server",
+        "default_port": 9020,
+        "grpc_port": 9021,
+        "protocol": "SafeSocket/gRPC",
+        "archetype": "Microservice"
+      },
+      {
+        "name": "notif-server",
+        "image": "ghcr.io/bastien-antigravity/notif-server",
+        "default_port": 1026,
+        "protocol": "SafeSocket",
+        "archetype": "Microservice"
+      },
+      {
+        "name": "tele-remote",
+        "image": "ghcr.io/bastien-antigravity/tele-remote",
+        "default_port": 1863,
+        "protocol": "gRPC/Telegram",
+        "archetype": "Microservice"
+      },
+      {
+        "name": "web-interface",
+        "image": "ghcr.io/bastien-antigravity/web",
+        "default_port": 5000,
+        "protocol": "HTTP",
+        "archetype": "Web"
+      }
+    ]
+  }
+}

@@ -1,7 +1,0 @@
-  python-ci:
-    uses: Bastien-Antigravity/fleet-operation-brain/.github/workflows/workflow-python.yml@develop
-    with:
-      working_directory: '{{WORKING_DIR}}'
-      python_version: '{{PYTHON_VERSION}}'
-      go_version: '{{GO_VERSION}}'
-    secrets: inherit

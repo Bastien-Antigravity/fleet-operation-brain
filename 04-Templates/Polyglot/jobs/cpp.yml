@@ -1,6 +1,0 @@
-  cpp-ci:
-    uses: Bastien-Antigravity/fleet-operation-brain/.github/workflows/workflow-cpp.yml@develop
-    with:
-      working_directory: '{{WORKING_DIR}}'
-      go_version: '{{GO_VERSION}}'
-    secrets: inherit

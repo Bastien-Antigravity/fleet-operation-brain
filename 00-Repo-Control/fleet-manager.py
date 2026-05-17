@@ -397,8 +397,7 @@ def template_repo(repo: Dict[str, Any], templates_dir: Path) -> str:
         return "[ {0} ] MISSING".format(name)
         
     # Exclusion Rule: Do not template knowledge-base repositories
-    excluded_repos = ["obsidian-brain", "01-Strategic-Nexus", "02-Business-BDD", "03-Tech-Stack", "04-Rapid-Prototyping", "05-Fleet-Operation", "07-Core-KMS"]
-    if name in excluded_repos:
+    if repo.get("exclude_from_compliance", False):
         return "[ {0} ] SKIP (Knowledge-Base)".format(name)
         
     github_dir = path / ".github"
@@ -532,8 +531,7 @@ def cleanup_repo(repo: Dict[str, Any]) -> str:
     if not path.exists():
         return "[ {0} ] MISSING".format(name)
         
-    excluded_repos = ["obsidian-brain", "01-Strategic-Nexus", "02-Business-BDD", "03-Tech-Stack", "04-Rapid-Prototyping", "05-Fleet-Operation", "07-Core-KMS"]
-    if name in excluded_repos:
+    if repo.get("exclude_from_compliance", False):
         return "[ {0} ] SKIP (Knowledge-Base)".format(name)
 
     # Standard files we want to PROTECT

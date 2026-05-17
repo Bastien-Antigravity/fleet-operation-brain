@@ -1,7 +1,0 @@
-  rust-ci:
-    uses: Bastien-Antigravity/fleet-operation-brain/.github/workflows/workflow-rust.yml@develop
-    with:
-      working_directory: '{{WORKING_DIR}}'
-      rust_version: '{{RUST_VERSION}}'
-      go_version: '{{GO_VERSION}}'
-    secrets: inherit

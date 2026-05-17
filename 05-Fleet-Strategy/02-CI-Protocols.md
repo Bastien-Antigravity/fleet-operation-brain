@@ -3,7 +3,7 @@ microservice: obsidian-brain
 type: fleet-op
 status: active
 tags:
-- \'#service/obsidian-brain\'
+- '#service/obsidian-brain'
 - '#type/fleet-op'
 - null
 - '#state/active'

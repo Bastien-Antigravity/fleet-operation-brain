@@ -388,7 +388,10 @@ def _detect_language_path(repo_path: Path, lang: str) -> Optional[str]:
     # 2. Check distconf/
     if (repo_path / "distconf" / lang).is_dir():
         return f"distconf/{lang}"
-    # 3. Special Case: Python in root (detected by requirements.txt or setup.py)
+    # 3. Check safesock/
+    if (repo_path / "safesock" / lang).is_dir():
+        return f"safesock/{lang}"
+    # 4. Special Case: Python in root (detected by requirements.txt or setup.py)
     if lang == "python":
         if (repo_path / "requirements.txt").exists() or (repo_path / "setup.py").exists():
             return "."
@@ -502,6 +505,23 @@ def template_repo(repo: Dict[str, Any], templates_dir: Path) -> str:
     if co_src.exists():
         with open(co_src, "r", encoding='utf-8') as src, open(co_dst, "w", encoding='utf-8') as dst:
             dst.write(src.read())
+
+    # 3.1 PULL_REQUEST_TEMPLATE.md
+    pr_src = templates_dir / "PULL_REQUEST_TEMPLATE.md"
+    pr_dst = github_dir / "PULL_REQUEST_TEMPLATE.md"
+    if pr_src.exists():
+        with open(pr_src, "r", encoding='utf-8') as src, open(pr_dst, "w", encoding='utf-8') as dst:
+            dst.write(src.read())
+
+    # 3.2 ISSUE_TEMPLATE/
+    it_src = templates_dir / "ISSUE_TEMPLATE"
+    it_dst = github_dir / "ISSUE_TEMPLATE"
+    if it_src.is_dir():
+        it_dst.mkdir(exist_ok=True)
+        for tmpl_file in it_src.iterdir():
+            target_file = it_dst / tmpl_file.name
+            with open(tmpl_file, "r", encoding='utf-8') as src, open(target_file, "w", encoding='utf-8') as dst:
+                dst.write(src.read())
             
     # 4. Global golangci-lint Template
     lint_src = templates_dir / "golangci-global.yml"

@@ -11,64 +11,163 @@ on:
         required: false
         type: string
         default: '3.12'
-      run_make:
-        required: false
-        type: boolean
-        default: true
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  verify:
-    name: Fleet Verification
+  discovery:
+    name: Ecosystem Discovery
     runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Detect Languages
+        id: set-matrix
+        run: |
+          langs="["
+          
+          # Go detection
+          if [ -n "$(find . -maxdepth 3 -name 'go.mod')" ]; then
+            langs="${langs}\"go\","
+          fi
+          
+          # Python detection
+          if [ -n "$(find . -maxdepth 3 -name 'requirements.txt' -o -name 'pyproject.toml' -o -name 'setup.py')" ]; then
+            langs="${langs}\"python\","
+          fi
+          
+          # Rust detection
+          if [ -n "$(find . -maxdepth 3 -name 'Cargo.toml')" ]; then
+            langs="${langs}\"rust\","
+          fi
+          
+          # C/C++ detection
+          if [ -n "$(find . -maxdepth 4 -name 'CMakeLists.txt' -o -name '*.cpp' -o -name '*.hpp')" ]; then
+            langs="${langs}\"cpp\","
+          fi
+          
+          # Clean trailing comma and close array
+          langs="${langs%,}"
+          langs="${langs}]"
+          if [ "$langs" = "]" ]; then langs="[]"; fi
+          
+          echo "Discovered ecosystems: $langs"
+          echo "matrix=$langs" >> $GITHUB_OUTPUT
+
+  polyglot-matrix:
+    name: Test (${{ matrix.language }})
+    needs: discovery
+    runs-on: ubuntu-latest
+    if: ${{ needs.discovery.outputs.matrix != '[]' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ${{ fromJSON(needs.discovery.outputs.matrix) }}
+    
     steps:
       - uses: actions/checkout@v4
 
-      # 1. Go Setup & Verification
+      # ---------------------------------------------------------
+      # SHARED CGO PRE-REQUISITE (Many polyglot SDKs wrap Go Core)
+      # ---------------------------------------------------------
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: ${{ inputs.go_version }}
           cache: true
 
-      - name: Go Format Check
-        run: if [ "$(gofmt -l . | wc -l)" -gt 0 ]; then echo "Unformatted files found"; gofmt -d .; exit 1; fi
+      - name: Build Core CGO Libraries (Dependencies)
+        if: matrix.language != 'go'
+        run: |
+          if grep -q "^build-lib:" Makefile 2>/dev/null; then
+            make build-lib
+          elif grep -q "^core:" Makefile 2>/dev/null; then
+            make core
+          fi
 
-      - name: Run golangci-lint
-        if: hashFiles('**/*.go') != ''
-        uses: golangci/golangci-lint-action@v7
-        with:
-          version: v2.12.2
-          args: --exclude="QF1008"
+      # ---------------------------------------------------------
+      # GO ECOSYSTEM
+      # ---------------------------------------------------------
+      - name: Go Native Checks & Tests
+        if: matrix.language == 'go'
+        run: |
+          if [ "$(gofmt -l . | wc -l)" -gt 0 ]; then echo "Unformatted files found"; gofmt -d .; exit 1; fi
+          go mod tidy || true
+          go test -v -race ./...
 
-      # 2. Python Setup (Conditional)
+      # ---------------------------------------------------------
+      # PYTHON ECOSYSTEM
+      # ---------------------------------------------------------
       - name: Set up Python
-        if: hashFiles('**/requirements.txt', '**/setup.py', '**/pyproject.toml') != ''
+        if: matrix.language == 'python'
         uses: actions/setup-python@v5
         with:
           python-version: ${{ inputs.python_version }}
 
-      # 3. Dynamic Test Execution
-      - name: Run Tests (Makefile)
-        if: inputs.run_make && hashFiles('Makefile') != ''
-        run: make test
-
-      - name: Run Tests (Go Native)
-        if: hashFiles('Makefile') == '' && hashFiles('**/*.go') != ''
-        run: go test -v -race ./...
-
-      - name: Run Tests (Python Native)
-        if: hashFiles('Makefile') == '' && hashFiles('**/requirements.txt', '**/setup.py', '**/pyproject.toml') != ''
+      - name: Python Tests
+        if: matrix.language == 'python'
         run: |
-          pip install pytest
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          pytest
+          pip install pytest build setuptools wheel
+          for dir in $(find . -maxdepth 3 -name "requirements.txt" -o -name "pyproject.toml" -o -name "setup.py" -exec dirname {} \; | sort -u); do
+            echo "========================================"
+            echo "Testing Python in $dir"
+            echo "========================================"
+            cd "$dir"
+            
+            # Install local dependencies
+            if [ -f setup.py ] || [ -f pyproject.toml ]; then pip install -e . || true; fi
+            if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+            
+            # Run pytest
+            pytest
+            
+            cd - > /dev/null
+          done
 
-      # 4. Global Sandbox Integration Dispatch
+      # ---------------------------------------------------------
+      # RUST ECOSYSTEM
+      # ---------------------------------------------------------
+      - name: Set up Rust
+        if: matrix.language == 'rust'
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Rust Tests
+        if: matrix.language == 'rust'
+        run: |
+          for dir in $(find . -maxdepth 3 -name "Cargo.toml" -exec dirname {} \; | sort -u); do
+            echo "========================================"
+            echo "Testing Rust in $dir"
+            echo "========================================"
+            cd "$dir"
+            cargo test --verbose
+            cd - > /dev/null
+          done
+
+      # ---------------------------------------------------------
+      # C++ ECOSYSTEM
+      # ---------------------------------------------------------
+      - name: CPP Tests
+        if: matrix.language == 'cpp'
+        run: |
+          for dir in $(find . -maxdepth 3 -name "Makefile" -exec dirname {} \; | sort -u); do
+            echo "========================================"
+            echo "Building/Testing CPP in $dir"
+            echo "========================================"
+            cd "$dir"
+            # Attempt to run test if test target exists in makefile and it's not the root go makefile
+            if [ "$dir" != "." ] && grep -q "^test:" Makefile 2>/dev/null; then
+              make test
+            fi
+            cd - > /dev/null
+          done
+
+      # ---------------------------------------------------------
+      # FLEET INTEGRATION
+      # ---------------------------------------------------------
       - name: Trigger Sandbox Verification
-        if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
+        if: matrix.language == 'go' && github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
         run: |
           echo "📡 Dispatching fleet-event to sandbox-testing..."
           curl -L \

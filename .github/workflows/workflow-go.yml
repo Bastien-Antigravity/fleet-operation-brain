@@ -52,6 +52,13 @@ jobs:
 
       - name: Run Go Tests
         run: |
+          if [ -f go.mod ]; then
+            echo "Removing relative replacements from go.mod for CI..."
+            grep -E "=>\s*\.\./" go.mod | awk '{print $1}' | while read -r dep; do
+              echo "Dropping replacement for: $dep"
+              go mod edit -dropreplace="$dep"
+            done
+          fi
           go mod tidy
           go test -v -race ./...
 

@@ -9,6 +9,7 @@ tags:
 - '#type/deployment-log'
 - '#state/active'
 - '#zone/3-fleet'
+- '#state/completed'
 ---
 
 # 🚀 Deployment Log: CI-RESTORE

@@ -54,6 +54,7 @@ To maintain a clean and traceable history, the following rules apply:
 1.  **Mandatory Local Commit**: Every task (feat/fix) MUST be committed locally with a descriptive message before any fleet synchronization.
 2.  **No Magic Syncs**: The Fleet Manager will REFUSE to sync any repository with uncommitted changes. This prevents generic or "messy" commit messages from entering the history.
 3.  **Sync = Delivery**: Synchronization is strictly for pulling remote updates and delivering verified local commits to GitHub.
+4.  **Pre-Task Git Checkpoint**: To enable safe rollbacks in case of code generation issues, the AI Squad MUST ensure that the current working directory is clean or has a safety commit (checkpoint) before writing new code. Under Mode 1, this check is blocking; under Mode 2, it is a recommendation; under Mode 4, the agent must warn the user.
 
 ## 🤝 PR & Review Protocol
 - **AI-Validation**: No PR should be merged to `develop` without passing the **Sandbox Integration** tests.

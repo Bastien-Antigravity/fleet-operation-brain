@@ -834,18 +834,12 @@ class FleetManager:
         """
         token = self.get_github_token()
         if not token:
-            self.logger.critical("\n" + "!"*60)
-            self.logger.critical("🚨 FLEET COMMANDER: AUTHENTICATION REQUIRED")
-            self.logger.critical("!"*60)
-            self.logger.critical("You are attempting a remote operation that requires GitHub credentials.")
-            self.logger.critical("To proceed, please provide a Personal Access Token (PAT).")
-            self.logger.critical("\nOption A (Environment Variable):")
-            self.logger.critical("   export GITHUB_TOKEN=your_token_here")
-            self.logger.critical("\nOption B (Hidden File):")
-            self.logger.critical("   echo 'your_token_here' > ~/.github_token")
-            self.logger.critical("\nNote: Ensure the token has 'repo' and 'workflow' permissions.")
-            self.logger.critical("!"*60 + "\n")
-            sysExit(1)
+            self.logger.warning("\n" + "!"*60)
+            self.logger.warning("🚨 FLEET COMMANDER: NO GITHUB_TOKEN FOUND")
+            self.logger.warning("!"*60)
+            self.logger.warning("No token found. Proceeding using system git configuration...")
+            self.logger.warning("!"*60 + "\n")
+            return ""
         return token
 
     # -----------------------------------------------------------------------------------------------

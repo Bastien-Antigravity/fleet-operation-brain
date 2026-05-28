@@ -39,8 +39,8 @@
       "master_branch": "develop"
     },
     {
-      "name": "08-RAG-Engine",
-      "path": "./obsidian-brain/08-RAG-Engine",
+      "name": "09-RAG-Engine",
+      "path": "./obsidian-brain/09-RAG-Engine",
       "remote": "https://github.com/Bastien-Antigravity/obsidian-rag-mcp.git",
       "master_branch": "develop"
     },

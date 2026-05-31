@@ -55,6 +55,13 @@
         "default_port": 5000,
         "protocol": "HTTP",
         "archetype": "Web"
+      },
+      {
+        "name": "ontime-scheduler",
+        "image": "ghcr.io/bastien-antigravity/ontime-scheduler",
+        "default_port": 8080,
+        "protocol": "HTTP",
+        "archetype": "Microservice"
       }
     ]
   }

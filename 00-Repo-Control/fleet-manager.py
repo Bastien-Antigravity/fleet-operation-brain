@@ -605,8 +605,33 @@ class FleetManager:
         dep_dst = github_dir / "dependabot.yml"
         if dep_src.exists():
             try:
-                with open(dep_src, "r", encoding='utf-8') as src, open(dep_dst, "w", encoding='utf-8') as dst:
-                    dst.write(src.read())
+                with open(dep_src, "r", encoding='utf-8') as src:
+                    dep_content = src.read()
+                
+                if is_polyglot:
+                    lines = dep_content.splitlines()
+                    out_lines = []
+                    in_block = None
+                    block_lines = []
+                    
+                    for line in lines:
+                        if line.strip().startswith("- package-ecosystem:"):
+                            if in_block:
+                                out_lines.extend(self._process_dep_block(in_block, block_lines, go_path, python_path, rust_path))
+                            in_block = line.split('"')[1] if '"' in line else line.split()[-1]
+                            block_lines = [line]
+                        elif in_block:
+                            block_lines.append(line)
+                        else:
+                            out_lines.append(line)
+                            
+                    if in_block:
+                        out_lines.extend(self._process_dep_block(in_block, block_lines, go_path, python_path, rust_path))
+                        
+                    dep_content = "\n".join(out_lines) + "\n"
+                
+                with open(dep_dst, "w", encoding='utf-8') as dst:
+                    dst.write(dep_content)
             except Exception as e:
                 self.logger.error("{0} : Failed to apply dependabot template for {1}: {2}".format(self.Name, name, e))
 
@@ -794,7 +819,7 @@ class FleetManager:
         if token and any(cmd in args for cmd in ["push", "pull", "fetch", "clone"]):
             git_base += [
                 "-c", "credential.helper=",
-                "-c", "credential.helper=!f() { echo \"username=x-access-token\"; echo \"password={0}\"; }; f".format(token)
+                "-c", "credential.helper=!f() {{ echo \"username=x-access-token\"; echo \"password={0}\"; }}; f".format(token)
             ]
 
         try:
@@ -841,6 +866,23 @@ class FleetManager:
             self.logger.warning("!"*60 + "\n")
             return ""
         return token
+
+    # -----------------------------------------------------------------------------------------------
+
+    def _process_dep_block(self, ecosystem: str, lines: typingList[str], go_path: typingOptional[str], python_path: typingOptional[str], rust_path: typingOptional[str]) -> typingList[str]:
+        if ecosystem == "gomod":
+            if not go_path:
+                return []
+            return [line.replace('directory: "/"', 'directory: "/{0}"'.format(go_path) if go_path != '.' else 'directory: "/"') for line in lines]
+        elif ecosystem == "pip":
+            if not python_path:
+                return []
+            return [line.replace('directory: "/{{PYTHON_DIR}}"', 'directory: "/{0}"'.format(python_path) if python_path != '.' else 'directory: "/"') for line in lines]
+        elif ecosystem == "cargo":
+            if not rust_path:
+                return []
+            return [line.replace('directory: "/{{RUST_DIR}}"', 'directory: "/{0}"'.format(rust_path) if rust_path != '.' else 'directory: "/"') for line in lines]
+        return lines
 
     # -----------------------------------------------------------------------------------------------
 

@@ -11,10 +11,8 @@ tags:
 
 # Deployment Logs MOC
 
-This index manages active deployment logs.
-
 ### Active Deployment Log
-- [[LOG-2026-05-20-CI-Restoration]]
+- [[LOG-2026-05-27-Fleet-Sync]]
 
 ### Archived Historical Logs
-> Archived logs are stored in the `deployments/` firewall zone to maintain minimal context weight.
+> Stored in the `deployments/` firewall zone.

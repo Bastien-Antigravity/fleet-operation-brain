@@ -13,27 +13,49 @@ DATA FLOW:
 4. Executes a fresh git clone into the target directory.
 
 KEY PARAMETERS:
-- DEFAULT_USER: The default GitHub account to fetch from.
+- account: The GitHub account to fetch from.
+- target: Target directory for clones.
+- dry_run: If True, only simulate actions.
+- use_inventory: If True, use inventory.json instead of GitHub API.
 """
 
+# [SCAN] Role: Developer | Source: fleet-refresh.py | State: Active
+
 from os import name as osName, execl as osExecl, chmod as osChmod, rename as osRename, makedirs as osMakedirs
-from os.path import dirname as osPathDirname, abspath as osPathAbspath, exists as osPathExists, join as osPathJoin, samefile as osPathSamefile
+from os.path import (
+    dirname as osPathDirname,
+    abspath as osPathAbspath,
+    exists as osPathExists,
+    join as osPathJoin,
+    samefile as osPathSamefile,
+)
 from sys import executable as sysExecutable, argv as sysArgv, exit as sysExit, stdout as sysStdout
 from shutil import rmtree as shutilRmtree
 from subprocess import run as subprocessRun
 from json import load as jsonLoad, loads as jsonLoads
 from time import time as timeTime
 from pathlib import Path as pathlibPath
-from typing import List as typingList, Dict as typingDict, Any as typingAny, Optional as typingOptional
+from typing import (
+    List as typingList,
+    Dict as typingDict,
+    Any as typingAny,
+    Optional as typingOptional,
+)
 
-# Ensure we are running inside the virtual environment
+# -----------------------------------------------------------------------------------------------
+# Venv bootstrap
+# -----------------------------------------------------------------------------------------------
 _venv_dir = osPathDirname(osPathAbspath(__file__))
 while _venv_dir and _venv_dir != '/' and not osPathExists(osPathJoin(_venv_dir, ".venv")):
     _parent = osPathDirname(_venv_dir)
     if _parent == _venv_dir:
         break
     _venv_dir = _parent
-_venv_python = osPathJoin(_venv_dir, ".venv", "Scripts", "python.exe") if osName == "nt" else osPathJoin(_venv_dir, ".venv", "bin", "python3")
+_venv_python = (
+    osPathJoin(_venv_dir, ".venv", "Scripts", "python.exe")
+    if osName == "nt"
+    else osPathJoin(_venv_dir, ".venv", "bin", "python3")
+)
 if osPathExists(_venv_python):
     try:
         if not osPathSamefile(sysExecutable, _venv_python):
@@ -41,7 +63,7 @@ if osPathExists(_venv_python):
     except OSError:
         pass
 
-# Standardize terminal output encoding for Windows
+# Standardize terminal output encoding
 if sysStdout.encoding != 'utf-8':
     try:
         sysStdout.reconfigure(encoding='utf-8')
@@ -51,21 +73,24 @@ if sysStdout.encoding != 'utf-8':
 # ### CONFIGURATIONS ###
 DEFAULT_USER = "Bastien-Antigravity"
 
+
 # -----------------------------------------------------------------------------------------------
 
 class FleetRefresher:
-    Name = "FleetRefresher"
+    """
+    Core class for performing fresh repository resets across the fleet.
+    """
 
-    def __init__(self, config: object, logger: object, name: typingOptional[str] = None) -> None:
+    def __init__(self, *, config: typingAny, logger: typingAny, name: typingOptional[str] = None) -> None:
         self.config = config
         self.logger = logger
-        self.Name = name if name is not None else "FleetRefresher"
+        self.Name = name or self.__class__.__name__
 
     # -----------------------------------------------------------------------------------------------
 
     def run_refresh(self, *, account: str, target: str, dry_run: bool, use_inventory: bool) -> None:
         """
-        Executes the nuclear refresh workflow for the registered repositories.
+        Executes the nuclear refresh workflow.
         """
         repos_to_refresh = []
 
@@ -88,10 +113,10 @@ class FleetRefresher:
                 self.logger.critical("{0} : Failed to load inventory: {1}".format(self.Name, e))
                 sysExit(1)
         else:
-            repos_to_refresh = self.get_github_repos(account)
+            repos_to_refresh = self.get_github_repos(user=account)
 
         if repos_to_refresh:
-            self.refresh_repos(repos_to_refresh, target, dry_run)
+            self.refresh_repos(repos=repos_to_refresh, target_base_dir=target, dry_run=dry_run)
             self.logger.info("{0} : \n--- Fleet Refresh operations finished ---".format(self.Name))
         else:
             self.logger.error("{0} : [ERROR] No repositories found to refresh.".format(self.Name))
@@ -99,9 +124,9 @@ class FleetRefresher:
 
     # -----------------------------------------------------------------------------------------------
 
-    def get_github_repos(self, user: str) -> typingOptional[typingList[typingDict[str, typingAny]]]:
+    def get_github_repos(self, *, user: str) -> typingOptional[typingList[typingDict[str, typingAny]]]:
         """
-        Fetches repository list from GitHub API (handles pagination).
+        Fetches repository list from GitHub API.
         """
         from urllib.request import Request as urllibRequestRequest, urlopen as urllibRequestUrlopen
 
@@ -126,7 +151,7 @@ class FleetRefresher:
 
     # -----------------------------------------------------------------------------------------------
 
-    def refresh_repos(self, repos: typingList[typingDict[str, typingAny]], target_base_dir: str = ".", dry_run: bool = False) -> None:
+    def refresh_repos(self, *, repos: typingList[typingDict[str, typingAny]], target_base_dir: str = ".", dry_run: bool = False) -> None:
         """
         Strict deletion and re-cloning logic for a list of repositories.
         """
@@ -135,7 +160,6 @@ class FleetRefresher:
         if dry_run:
             self.logger.info("{0} :   [DRY RUN] No files will be deleted or cloned.".format(self.Name))
 
-        # Ensure target directory exists
         if target_base_dir != "." and not osPathExists(target_base_dir):
             if not dry_run:
                 try:
@@ -150,7 +174,6 @@ class FleetRefresher:
             clone_url = repo['clone_url']
             target_path = osPathJoin(target_base_dir, name)
 
-            # 1. Targeted Deletion
             if osPathExists(target_path):
                 if dry_run:
                     self.logger.info("{0} :   [DRY RUN] Would remove existing folder: {1}".format(self.Name, target_path))
@@ -161,28 +184,16 @@ class FleetRefresher:
                     except Exception as e:
                         self.logger.error("{0} :     [WARNING] Initial deletion failed, attempting rename/move: {1}".format(self.Name, e))
                         try:
-                            timestamp = int(timeTime())
-                            backup_name = "{0}_DEPRECATED_{1}".format(target_path, timestamp)
+                            backup_name = "{0}_DEPRECATED_{1}".format(target_path, int(timeTime()))
                             osRename(target_path, backup_name)
                             self.logger.info("{0} :     [INFO] Moved locked folder to {1}".format(self.Name, backup_name))
-
-                            # SAFETY: Deactivate Git in the deprecated folder
-                            git_dir = osPathJoin(backup_name, ".git")
-                            if osPathExists(git_dir):
-                                try:
-                                    osRename(git_dir, osPathJoin(backup_name, "DISABLED_GIT_FOLDER"))
-                                except Exception:
-                                    pass
                         except Exception as e2:
                             self.logger.error("{0} :     [CRITICAL] Failed to clear path for {1}: {2}".format(self.Name, name, e2))
                             continue
 
-            # 2. Pre-Clone Verification
             if osPathExists(target_path) and not dry_run:
-                self.logger.error("{0} :   [ERROR] Path {1} still exists! Skipping clone.".format(self.Name, target_path))
                 continue
 
-            # 3. Clean Clone
             if dry_run:
                 self.logger.info("{0} :   [DRY RUN] Would clone {1} into {2}".format(self.Name, name, target_path))
             else:
@@ -198,7 +209,7 @@ class FleetRefresher:
 
     def _handle_remove_readonly(self, func: typingAny, path: str, excinfo: typingAny) -> None:
         """
-        Forcefully handles read-only files during deletion (common on Windows).
+        Forcefully handles read-only files during deletion.
         """
         try:
             osChmod(path, 0o777)
@@ -206,30 +217,23 @@ class FleetRefresher:
         except Exception:
             pass
 
+
 # -----------------------------------------------------------------------------------------------
 
 if __name__ == "__main__":
     import argparse
 
     class DefaultLogger:
-        def info(self, msg: str) -> None:
-            print(msg)
-        def error(self, msg: str) -> None:
-            print(msg)
-        def warning(self, msg: str) -> None:
-            print(msg)
-        def critical(self, msg: str) -> None:
-            print(msg)
+        def info(self, msg: str) -> None: print(msg)
+        def error(self, msg: str) -> None: print(msg)
+        def warning(self, msg: str) -> None: print(msg)
+        def critical(self, msg: str) -> None: print(msg)
 
     parser = argparse.ArgumentParser(description="Nuclear Refresh: Wipe and re-clone repositories.")
-    parser.add_argument("account", nargs="?", default=DEFAULT_USER,
-                        help="GitHub username or organization (default: {0})".format(DEFAULT_USER))
-    parser.add_argument("--target", "-t", default=".",
-                        help="Target directory where repos should be cloned (default: current directory)")
-    parser.add_argument("--dry-run", action="store_true",
-                        help="Show what would be done without making changes")
-    parser.add_argument("--inventory", "-i", action="store_true",
-                        help="Refresh only repositories listed in inventory.json (ignores GitHub API)")
+    parser.add_argument("account", nargs="?", default=DEFAULT_USER, help="GitHub account")
+    parser.add_argument("--target", "-t", default=".", help="Target directory")
+    parser.add_argument("--dry-run", action="store_true", help="Simulate actions")
+    parser.add_argument("--inventory", "-i", action="store_true", help="Use inventory.json")
 
     args = parser.parse_args()
 

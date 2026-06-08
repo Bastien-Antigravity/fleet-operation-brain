@@ -4,8 +4,7 @@
 """
 ESSENTIAL PROCESS:
 Audits the Fleet Action Plans folder and archives completed or historical plans
-into the 'plans/' folder (with context firewall ignore rules),
-ensuring the folder remains pristine.
+into the 'plans/' folder (with context firewall ignore rules).
 
 DATA FLOW:
 1. Scans the directory root for *.md plan files.
@@ -16,22 +15,42 @@ KEY PARAMETERS:
 - None
 """
 
+# [SCAN] Role: Developer | Source: archive.py (Action Plans) | State: Active
+
 from os import name as osName, execl as osExecl
-from os.path import dirname as osPathDirname, abspath as osPathAbspath, exists as osPathExists, join as osPathJoin, samefile as osPathSamefile
+from os.path import (
+    dirname as osPathDirname,
+    abspath as osPathAbspath,
+    exists as osPathExists,
+    join as osPathJoin,
+    samefile as osPathSamefile,
+)
 from sys import executable as sysExecutable, argv as sysArgv, exit as sysExit
 from re import match as reMatch, search as reSearch
 from shutil import move as shutilMove
 from pathlib import Path as pathlibPath
-from typing import Optional as typingOptional, List as typingList, Dict as typingDict, Any as typingAny
+from typing import (
+    Optional as typingOptional,
+    List as typingList,
+    Dict as typingDict,
+    Any as typingAny,
+    Tuple as typingTuple,
+)
 
-# Ensure we are running inside the virtual environment
+# -----------------------------------------------------------------------------------------------
+# Venv bootstrap
+# -----------------------------------------------------------------------------------------------
 _venv_dir = osPathDirname(osPathAbspath(__file__))
 while _venv_dir and _venv_dir != '/' and not osPathExists(osPathJoin(_venv_dir, ".venv")):
     _parent = osPathDirname(_venv_dir)
     if _parent == _venv_dir:
         break
     _venv_dir = _parent
-_venv_python = osPathJoin(_venv_dir, ".venv", "Scripts", "python.exe") if osName == "nt" else osPathJoin(_venv_dir, ".venv", "bin", "python3")
+_venv_python = (
+    osPathJoin(_venv_dir, ".venv", "Scripts", "python.exe")
+    if osName == "nt"
+    else osPathJoin(_venv_dir, ".venv", "bin", "python3")
+)
 if osPathExists(_venv_python):
     try:
         if not osPathSamefile(sysExecutable, _venv_python):
@@ -39,21 +58,24 @@ if osPathExists(_venv_python):
     except OSError:
         pass
 
+
 # -----------------------------------------------------------------------------------------------
 
 class FleetActionPlansArchiver:
-    Name = "FleetActionPlansArchiver"
+    """
+    Handles the archival of completed fleet action plans to maintain context efficiency.
+    """
 
-    def __init__(self, config: object, logger: object, name: typingOptional[str] = None) -> None:
+    def __init__(self, *, config: typingAny, logger: typingAny, name: typingOptional[str] = None) -> None:
         self.config = config
         self.logger = logger
-        self.Name = name if name is not None else "FleetActionPlansArchiver"
+        self.Name = name or self.__class__.__name__
 
     # -----------------------------------------------------------------------------------------------
 
     def run_archive(self) -> None:
         """
-        Executes the archive workflow for historical fleet action plans.
+        Executes the archive workflow.
         """
         root = pathlibPath(__file__).resolve().parent
         archive_dir = root / "plans"
@@ -61,53 +83,24 @@ class FleetActionPlansArchiver:
         # 1. Ensure archive directory exists
         archive_dir.mkdir(exist_ok=True)
 
-        # 2. Ensure ignore files exist inside plans/
-        ignore_files = [".aiignore", ".mcpignore", ".geminiignore"]
-        for filename in ignore_files:
-            ignore_file = archive_dir / filename
-            if not ignore_file.exists():
-                try:
-                    with open(ignore_file, "w", encoding="utf-8") as f:
-                        f.write("*\n")
-                    self.logger.info("{0} : ✨ Created context firewall ignore file: plans/{1}".format(self.Name, filename))
-                except Exception as e:
-                    self.logger.error("{0} : Failed to create ignore file {1}: {2}".format(self.Name, filename, e))
+        # 2. Ensure ignore files exist
+        self._ensure_firewall(archive_dir=archive_dir)
 
-        # 3. Scan for markdown files to process (excluding README.md, MOC, or script files)
+        # 3. Scan for markdown files
         targets = [f for f in root.glob("*.md") if f.name != "README.md" and f.name != "Fleet-Action-Plans-MOC.md"]
 
         if not targets:
             self.logger.info("{0} : ✨ FLEET ACTION PLANS DIRECTORY IS ALREADY PERFECT!".format(self.Name))
             return
 
-        # 4. Check for active migrations in the main README
-        readme_path = root.parent / "README.md"
-        no_active_migrations = True
-        if readme_path.exists():
-            try:
-                with open(readme_path, "r", encoding="utf-8") as f:
-                    readme_text = f.read()
-                    if "Ongoing Migrations: None" not in readme_text:
-                        no_active_migrations = False
-            except Exception as e:
-                self.logger.error("{0} : Failed to read README.md: {1}".format(self.Name, e))
+        # 4. Check for active migrations
+        no_active_migrations = self._check_active_migrations(root=root)
 
         to_archive = []
         retained = []
 
         for filepath in targets:
-            # Check YAML frontmatter for status
-            is_completed = False
-            try:
-                with open(filepath, "r", encoding="utf-8") as f:
-                    content = f.read()
-                    status_match = reSearch(r"status:\s*(\w+)", content)
-                    if status_match and status_match.group(1).lower() == "completed":
-                        is_completed = True
-            except Exception as e:
-                self.logger.error("{0} : Failed to check status of {1}: {2}".format(self.Name, filepath.name, e))
-
-            # Archive if status is completed OR if the global state indicates no active migrations
+            is_completed = self._is_plan_completed(filepath=filepath)
             if is_completed or no_active_migrations:
                 to_archive.append(filepath)
             else:
@@ -121,35 +114,67 @@ class FleetActionPlansArchiver:
         if not to_archive:
             self.logger.info("{0} : ✨ No historical action plans need archiving.".format(self.Name))
         else:
-            self.logger.info("{0} : 📦 FOUND {1} HISTORICAL ACTION PLAN(S) TO ARCHIVE:".format(self.Name, len(to_archive)))
-            for filepath in to_archive:
-                dest = archive_dir / filepath.name
+            self._archive_files(files=to_archive, archive_dir=archive_dir)
 
-                # Avoid name collisions in the archive
-                if dest.exists():
-                    base = filepath.stem
-                    ext = filepath.suffix
-                    counter = 1
-                    while (archive_dir / "{0}_{1}{2}".format(base, counter, ext)).exists():
-                        counter += 1
-                    dest = archive_dir / "{0}_{1}{2}".format(base, counter, ext)
-
-                try:
-                    shutilMove(str(filepath), str(dest))
-                    self.logger.info("{0} :   [-] Archived: {1} -> plans/{2}".format(self.Name, filepath.name, dest.name))
-                except Exception as e:
-                    self.logger.error("{0} : Failed to move {1} to archive: {2}".format(self.Name, filepath.name, e))
-
-        # 5. Update the parent Fleet-Action-Plans-MOC.md links
-        self._update_moc(retained)
+        # 5. Update MOC
+        self._update_moc(retained=retained)
         self.logger.info("{0} : ✅ FLEET ACTION PLANS HOUSEKEEPING COMPLETE!".format(self.Name))
 
     # -----------------------------------------------------------------------------------------------
 
-    def _update_moc(self, retained: typingList[pathlibPath]) -> None:
-        """
-        Updates the parent MOC file links.
-        """
+    def _ensure_firewall(self, *, archive_dir: pathlibPath) -> None:
+        ignore_files = [".aiignore", ".mcpignore", ".geminiignore"]
+        for filename in ignore_files:
+            ignore_file = archive_dir / filename
+            if not ignore_file.exists():
+                try:
+                    with open(ignore_file, "w", encoding="utf-8") as f:
+                        f.write("*\n")
+                    self.logger.info("{0} : ✨ Created context firewall: plans/{1}".format(self.Name, filename))
+                except Exception as e:
+                    self.logger.error("{0} : Failed to create firewall {1}: {2}".format(self.Name, filename, e))
+
+    # -----------------------------------------------------------------------------------------------
+
+    def _check_active_migrations(self, *, root: pathlibPath) -> bool:
+        readme_path = root.parent / "README.md"
+        if readme_path.exists():
+            try:
+                with open(readme_path, "r", encoding="utf-8") as f:
+                    return "Ongoing Migrations: None" in f.read()
+            except Exception:
+                pass
+        return True
+
+    # -----------------------------------------------------------------------------------------------
+
+    def _is_plan_completed(self, *, filepath: pathlibPath) -> bool:
+        try:
+            with open(filepath, "r", encoding="utf-8") as f:
+                content = f.read()
+                status_match = reSearch(r"status:\s*(\w+)", content)
+                return status_match and status_match.group(1).lower() == "completed"
+        except Exception:
+            return False
+
+    # -----------------------------------------------------------------------------------------------
+
+    def _archive_files(self, *, files: typingList[pathlibPath], archive_dir: pathlibPath) -> None:
+        self.logger.info("{0} : 📦 ARCHIVING {1} HISTORICAL PLAN(S):".format(self.Name, len(files)))
+        for filepath in files:
+            dest = archive_dir / filepath.name
+            if dest.exists():
+                dest = archive_dir / "{0}_{1}{2}".format(filepath.stem, 1, filepath.suffix)
+
+            try:
+                shutilMove(str(filepath), str(dest))
+                self.logger.info("{0} :   [-] Archived: {1}".format(self.Name, filepath.name))
+            except Exception as e:
+                self.logger.error("{0} : Failed to archive {1}: {2}".format(self.Name, filepath.name, e))
+
+    # -----------------------------------------------------------------------------------------------
+
+    def _update_moc(self, *, retained: typingList[pathlibPath]) -> None:
         root = pathlibPath(__file__).resolve().parent
         moc_path = root.parent / "Fleet-Action-Plans-MOC.md"
         if moc_path.exists():
@@ -157,42 +182,34 @@ class FleetActionPlansArchiver:
                 with open(moc_path, "r", encoding="utf-8") as f:
                     content = f.read()
 
-                frontmatter_match = reMatch(r"^---[\s\S]*?---\n*", content)
-                frontmatter = frontmatter_match.group(0) if frontmatter_match else ""
+                fm_match = reMatch(r"^---[\s\S]*?---\n*", content)
+                fm = fm_match.group(0) if fm_match else ""
 
-                # Build active links list
-                active_links_str = ""
-                for r in retained:
-                    active_links_str += "- [[{0}]]\n".format(r.stem)
-                if not active_links_str:
-                    active_links_str = "*None currently active.*\n"
-
-                new_moc_content = (
+                links = "\n".join(["- [[{0}]]".format(r.stem) for r in retained]) or "*None currently active.*"
+                
+                new_content = (
                     "{0}"
                     "# Fleet Action Plans MOC\n\n"
-                    "This index manages active and historical fleet migrations.\n\n"
                     "### Active Migration Plans\n"
-                    "{1}\n"
+                    "{1}\n\n"
                     "### Archived Historical Plans\n"
-                    "> Archived plans are stored in the `plans/` firewall zone to maintain minimal context weight.\n"
-                ).format(frontmatter, active_links_str)
+                    "> Stored in the `plans/` firewall zone.\n"
+                ).format(fm, links)
 
                 with open(moc_path, "w", encoding="utf-8") as f:
-                    f.write(new_moc_content)
-                self.logger.info("{0} : ✨ Updated Fleet-Action-Plans-MOC.md with the active layout!".format(self.Name))
+                    f.write(new_content)
+                self.logger.info("{0} : ✨ Updated Fleet-Action-Plans-MOC.md".format(self.Name))
             except Exception as e:
-                self.logger.error("{0} : ⚠️ Warning: Failed to update Fleet-Action-Plans-MOC.md: {1}".format(self.Name, e))
+                self.logger.error("{0} : Failed to update MOC: {1}".format(self.Name, e))
+
 
 # -----------------------------------------------------------------------------------------------
 
 if __name__ == "__main__":
     class DefaultLogger:
-        def info(self, msg: str) -> None:
-            print(msg)
-        def error(self, msg: str) -> None:
-            print(msg)
-        def critical(self, msg: str) -> None:
-            print(msg)
+        def info(self, msg: str) -> None: print(msg)
+        def error(self, msg: str) -> None: print(msg)
+        def critical(self, msg: str) -> None: print(msg)
 
     archiver = FleetActionPlansArchiver(config=object(), logger=DefaultLogger())
     archiver.run_archive()

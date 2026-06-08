@@ -15,7 +15,7 @@ type: fleet-action-plan
 status: draft
 date: YYYY-MM-DD
 scope: [list of target repositories]
-mode: "[[00-AI-Orchestration/MODE-MANUAL]]"
+mode: "[[00-AI-Orchestration/Config/MODE-MANUAL]]"
 ---
 
 ## 🎯 Objective

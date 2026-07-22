@@ -1,12 +1,13 @@
 ---
-microservice: "{{REPO_NAME}}"
+microservice: '{{REPO_NAME}}'
 type: architecture
 status: active
 tags:
 - '#ai/ignore'
-- '#service/{{REPO_NAME}}'
+- '#service/{{repo_name}}'
+- '#type/architecture'
+- '#state/active'
 ---
-
 # Architecture Overview
 
 This document describes the high-level architecture and structural boundaries of **{{REPO_NAME}}**.

@@ -110,6 +110,16 @@ jobs:
             echo "Testing Go in $dir"
             echo "========================================"
             cd "$dir"
+            if [ -f go.mod ]; then
+              grep -E '=> \.\./' go.mod | while read -r line; do
+                target=$(echo "$line" | awk '{print $NF}')
+                mod=$(echo "$line" | awk '{print $1}')
+                if [ ! -d "$target" ]; then
+                  echo "Removing missing local replace in CI: $mod -> $target"
+                  go mod edit -dropreplace "$mod" || true
+                fi
+              done
+            fi
             unformatted=$(gofmt -l . 2>/dev/null | tr -d ' ')
             if [ -n "$unformatted" ]; then
               echo "Unformatted files found in $dir:"

@@ -68,9 +68,11 @@ jobs:
       - name: Build CGO Bridges
         run: |
           if [ -f Makefile ]; then
-            if grep -q "^core:" Makefile 2>/dev/null; then make core; elif grep -q "^build:" Makefile 2>/dev/null; then make build; fi
+            if grep -q "^build-lib:" Makefile 2>/dev/null; then make build-lib; elif grep -q "^core:" Makefile 2>/dev/null; then make core; elif grep -q "^build:" Makefile 2>/dev/null; then make build; fi
           elif [ -f ../Makefile ]; then
-            if grep -q "^core:" ../Makefile 2>/dev/null; then make -C .. core; elif grep -q "^build:" ../Makefile 2>/dev/null; then make -C .. build; fi
+            if grep -q "^build-lib:" ../Makefile 2>/dev/null; then make -C .. build-lib; elif grep -q "^core:" ../Makefile 2>/dev/null; then make -C .. core; elif grep -q "^build:" ../Makefile 2>/dev/null; then make build; fi
+          elif [ -f ../../Makefile ]; then
+            if grep -q "^build-lib:" ../../Makefile 2>/dev/null; then make -C ../.. build-lib; elif grep -q "^core:" ../../Makefile 2>/dev/null; then make -C ../.. core; elif grep -q "^build:" ../../Makefile 2>/dev/null; then make -C ../.. build; fi
           fi
 
       - name: Set up Rust

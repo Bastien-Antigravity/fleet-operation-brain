@@ -72,7 +72,7 @@
       "name": "demo-surface-vol",
       "path": "./demo-surface-vol",
       "remote": "https://github.com/Bastien-Antigravity/demo-surface-vol.git",
-      "master_branch": "main"
+      "master_branch": "develop"
     },
     {
       "name": "distributed-config",

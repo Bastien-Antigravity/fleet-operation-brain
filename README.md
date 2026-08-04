@@ -25,9 +25,16 @@ Welcome to the **Strategic Command Deck**. This brain is the cockpit for mass-ex
 - `02-Deployment-Logs/`: Historical audit logs of fleet modifications and deployment reports.
 - `05-Fleet-Strategy/`: Global conventions, laws, and CI/CD standardization policies.
 
-## 🚦 Fleet Status
-- **Repositories**: See `00-Repo-Control/inventory.json` for the live registry.
-- **Ongoing Migrations**: None.
+## 🛠️ Fleet Manager Quick Reference
+
+| Command | Action Description | Example Usage |
+| :--- | :--- | :--- |
+| `status` | Audit git branch and dirty/clean status across the fleet | `python3 00-Repo-Control/fleet-manager.py status` |
+| `sync` | Perform atomic pull, submodule update, and push across fleet | `python3 00-Repo-Control/fleet-manager.py sync` |
+| `vault-sync` | Perform atomic sync of obsidian-brain submodules and parent pointer | `python3 00-Repo-Control/fleet-manager.py vault-sync` |
+| `audit` | Check CI/CD workflow status via GitHub API across fleet | `python3 00-Repo-Control/fleet-manager.py audit` |
+| `discover` | Scan workspace and update `inventory.json` safely | `python3 00-Repo-Control/fleet-manager.py discover` |
+| `--repo / -r` | Target a specific repository or subset | `python3 00-Repo-Control/fleet-manager.py status -r log-server` |
 
 ---
 > [!IMPORTANT]

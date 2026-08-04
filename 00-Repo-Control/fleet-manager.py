@@ -43,25 +43,35 @@ from typing import (
 )
 
 # -----------------------------------------------------------------------------------------------
-# Venv bootstrap
+# Ecosystem & Venv bootstrap via microservice-toolbox
 # -----------------------------------------------------------------------------------------------
-_venv_dir = osPathDirname(osPathAbspath(__file__))
-while _venv_dir and _venv_dir != '/' and not osPathExists(osPathJoin(_venv_dir, ".venv")):
-    _parent = osPathDirname(_venv_dir)
-    if _parent == _venv_dir:
-        break
-    _venv_dir = _parent
-_venv_python = (
-    osPathJoin(_venv_dir, ".venv", "Scripts", "python.exe")
-    if osName == "nt"
-    else osPathJoin(_venv_dir, ".venv", "bin", "python3")
-)
-if osPathExists(_venv_python):
-    try:
-        if not osPathSamefile(sysExecutable, _venv_python):
-            osExecl(_venv_python, _venv_python, *sysArgv)
-    except OSError:
-        pass
+_curr_dir = osPathDirname(osPathAbspath(__file__))
+_ws_root = pathlibPath(_curr_dir).parents[3]
+_mb_path = _ws_root / "microservice-toolbox" / "python"
+if _mb_path.exists() and str(_mb_path) not in sys.path:
+    sys.path.insert(0, str(_mb_path))
+
+try:
+    from microservice_toolbox.utils.bootstrap import bootstrap_microservice
+    bootstrap_microservice(__file__, app_name="fleet_manager")
+except Exception:
+    _venv_dir = osPathDirname(osPathAbspath(__file__))
+    while _venv_dir and _venv_dir != '/' and not osPathExists(osPathJoin(_venv_dir, ".venv")):
+        _parent = osPathDirname(_venv_dir)
+        if _parent == _venv_dir:
+            break
+        _venv_dir = _parent
+    _venv_python = (
+        osPathJoin(_venv_dir, ".venv", "Scripts", "python.exe")
+        if osName == "nt"
+        else osPathJoin(_venv_dir, ".venv", "bin", "python3")
+    )
+    if osPathExists(_venv_python):
+        try:
+            if not osPathSamefile(sysExecutable, _venv_python):
+                osExecl(_venv_python, _venv_python, *sysArgv)
+        except OSError:
+            pass
 
 # Standardize terminal output encoding
 if sysStdout.encoding != 'utf-8':
@@ -82,14 +92,25 @@ class FleetManager:
         self.config = config
         self.logger = logger
         self.Name = name or self.__class__.__name__
-        self.GoVersion = "1.25"
-        self.PythonVersion = "3.12"
-        self.RustVersion = "1.91"
-        self.CppVersion = "20"
+
+        # Load dynamic toolchain versions from service-registry.json if available
+        registry_path = pathlibPath(__file__).resolve().parent / "service-registry.json"
+        toolchains = {}
+        if registry_path.exists():
+            try:
+                with open(registry_path, "r", encoding="utf-8") as f:
+                    toolchains = jsonLoad(f).get("toolchains", {})
+            except Exception:
+                pass
+
+        self.GoVersion = toolchains.get("go", "1.25")
+        self.PythonVersion = toolchains.get("python", "3.12")
+        self.RustVersion = toolchains.get("rust", "1.91")
+        self.CppVersion = toolchains.get("cpp", "20")
 
     # -----------------------------------------------------------------------------------------------
 
-    def run(self, *, command: str, args: typingList[str]) -> None:
+    def run(self, *, command: str, args: typingList[str], target_repo: typingOptional[str] = None) -> None:
         """
         Main runner coordinating the execution of the requested command.
         """
@@ -106,8 +127,29 @@ class FleetManager:
             return
 
         inventory = self._resolve_inventory_paths(inventory=inventory)
+
+        if target_repo:
+            all_repos = inventory.get("repositories", [])
+            if target_repo.lower() in ["active", "active-workspaces", "workspaces"]:
+                active_names = self._resolve_active_workspaces()
+                filtered = [r for r in all_repos if r.get("name") in active_names or pathlibPath(r.get("path", "")).name in active_names]
+                if filtered:
+                    inventory["repositories"] = filtered
+                    self.logger.info("{0} : 🎯 Dynamically filtered target to {1} active workspace repository(ies)".format(self.Name, len(filtered)))
+                else:
+                    self.logger.error("{0} : ❌ No active workspace repositories found.".format(self.Name))
+                    return
+            else:
+                filtered = [r for r in all_repos if target_repo.lower() in r.get("name", "").lower()]
+                if filtered:
+                    inventory["repositories"] = filtered
+                    self.logger.info("{0} : 🎯 Filtered target to {1} repository(ies) matching '{2}'".format(self.Name, len(filtered), target_repo))
+                else:
+                    self.logger.error("{0} : ❌ Target filter '{1}' matched 0 repositories.".format(self.Name, target_repo))
+                    return
+
         num_repos = len(inventory.get("repositories", []))
-        optimal_workers = max(5, min(32, num_repos))
+        optimal_workers = max(1, min(32, num_repos))
 
         if command in ["sync", "vault-sync", "restore", "tag", "audit", "status", "attach"]:
             self._ensure_auth()
@@ -501,6 +543,27 @@ class FleetManager:
     # -----------------------------------------------------------------------------------------------
 
     def _handle_discover(self, *, inventory: typingDict[str, typingAny], inventory_path: pathlibPath) -> None:
+        try:
+            from build_inventory import MInventoryBuilder
+            builder = MInventoryBuilder(config=self.config, logger=self.logger)
+            builder.build(dry_run=False)
+            self.logger.info("{0} : Discovery completed safely via MInventoryBuilder.".format(self.Name))
+            return
+        except ImportError:
+            try:
+                import importlib.util
+                build_inv_path = pathlibPath(__file__).resolve().parent / "build-inventory.py"
+                spec = importlib.util.spec_from_file_location("build_inventory", str(build_inv_path))
+                if spec and spec.loader:
+                    mod = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(mod)
+                    builder = mod.MInventoryBuilder(config=self.config, logger=self.logger)
+                    builder.build(dry_run=False)
+                    self.logger.info("{0} : Discovery completed safely via MInventoryBuilder.".format(self.Name))
+                    return
+            except Exception as ex:
+                self.logger.warning("{0} : Could not invoke MInventoryBuilder ({1}), using fallback.".format(self.Name, ex))
+
         workspace_root = self._find_workspace_root()
         discovered = self.discover_repos(root_dir=workspace_root)
         for repo in discovered:
@@ -701,6 +764,46 @@ class FleetManager:
 
     # -----------------------------------------------------------------------------------------------
 
+    def _resolve_active_workspaces(self) -> typingAny:
+        workspace_root = self._find_workspace_root()
+        active = set()
+
+        # 1. Check environment variable
+        env_var = osGetenv("ACTIVE_WORKSPACES") or osGetenv("WORKSPACE_PATHS")
+        if env_var:
+            for item in env_var.split(","):
+                if item.strip():
+                    active.add(pathlibPath(item.strip()).name)
+            if active:
+                return active
+
+        # 2. Check *.code-workspace JSON files
+        for ws_file in workspace_root.glob("*.code-workspace"):
+            try:
+                with open(ws_file, "r", encoding="utf-8") as f:
+                    data = jsonLoad(f)
+                    for folder in data.get("folders", []):
+                        p = folder.get("path")
+                        if p:
+                            active.add(pathlibPath(p).name)
+            except Exception:
+                pass
+
+        if active:
+            return active
+
+        # 3. Fallback: Sibling directories containing .git
+        try:
+            for item in workspace_root.iterdir():
+                if item.is_dir() and (item / ".git").exists():
+                    active.add(item.name)
+        except Exception:
+            pass
+
+        return active
+
+    # -----------------------------------------------------------------------------------------------
+
     def _find_workspace_root(self) -> pathlibPath:
         current = pathlibPath(__file__).resolve().parent
         for parent in [current] + list(current.parents):
@@ -747,14 +850,65 @@ class FleetManager:
 # -----------------------------------------------------------------------------------------------
 
 if __name__ == "__main__":
+    import argparse
+
     class DefaultLogger:
         def info(self, msg: str) -> None: print(msg)
         def error(self, msg: str) -> None: print(msg)
         def warning(self, msg: str) -> None: print(msg)
         def critical(self, msg: str) -> None: print(msg)
 
-    cmd = sysArgv[1] if len(sysArgv) > 1 else "status"
-    cmd_args = sysArgv[2:]
+    parser = argparse.ArgumentParser(
+        description="Fleet Manager: Orchestrates fleet-wide Git, CI/CD, and maintenance operations.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""Commands:
+  status       Check branch, clean/dirty state, ahead/behind count across fleet
+  sync         Pull, update submodules, and push changes across fleet
+  vault-sync   Perform atomic sync of obsidian-brain submodules and parent pointer
+  audit        Audit CI/CD workflow status and GitHub Actions status
+  commit       Stage and commit changes across fleet (pass message as extra arg)
+  tag          Tag and push git tag across fleet (pass tag name as extra arg)
+  branch       Checkout target git branch across fleet (pass branch name as extra arg)
+  template     Apply standard CI/CD workflow templates across fleet
+  cleanup      Purge legacy CI/CD artifacts across fleet
+  restore      Git clone any missing fleet repositories from remotes
+  discover     Safely scan workspace and update inventory.json
+  refresh      Refresh workspace state via fleet-refresh.py
+"""
+    )
+    parser.add_argument(
+        "command",
+        nargs="?",
+        default="status",
+        choices=[
+            "status", "sync", "vault-sync", "audit", "commit",
+            "tag", "branch", "template", "cleanup", "restore",
+            "discover", "refresh", "attach"
+        ],
+        help="Command to run (default: status)"
+    )
+    parser.add_argument(
+        "--repo", "-r",
+        dest="target_repo",
+        default=None,
+        help="Filter operations to a specific repository by name or substring"
+    )
 
-    manager = FleetManager(config=object(), logger=DefaultLogger())
-    manager.run(command=cmd, args=cmd_args)
+    cli_args, extra_args = parser.parse_known_args()
+
+    try:
+        from microservice_toolbox.config.loader import load_config
+        from microservice_toolbox.logger import UniLog
+        config = load_config("standalone", input_args=[])
+        logger = UniLog(
+            app_name="fleet_manager",
+            config_profile="standalone",
+            logger_profile="devel"
+        )
+        config.set_logger(logger)
+    except Exception:
+        config = object()
+        logger = DefaultLogger()
+
+    manager = FleetManager(config=config, logger=logger)
+    manager.run(command=cli_args.command, args=extra_args, target_repo=cli_args.target_repo)

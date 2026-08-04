@@ -26,8 +26,8 @@ The fleet command center orchestrates multi-repository operations, enforces meta
 - **Action**: Runs `python3 fleet-manager.py sync` or `commit "<msg>"`.
 - **Behavior**: Standardizes Git states across the active fleet. It pulls updates, stages files, and runs bulk commits safely in parallel, refusing to touch dirty states.
 
-### 3. Compliance Verification & Push Gate (`fleet-commander.py`)
-- **Action**: Runs `python3 20-Scripts/fleet-commander.py [--repo <name> | --fleet] -m "<msg>"`.
+### 3. Compliance Verification & Push Gate (`fleet-commander`)
+- **Action**: Runs `python3 08-Base-Scripts/main.py fleet-commander [--repo <name> | --fleet] -m "<msg>"`.
 - **Behavior**: 
   - Verifies presence of standard YAML frontmatter, `AI-*` files, and `quick-overview/` directories before pushing.
   - Automatically reads the inventory registry's `"exclude_from_compliance": true` flag to dynamically bypass strict code-compliance gates for knowledge-base repositories (like `obsidian-brain`, `03-Tech-Stack`, etc.) while still allowing them standard Git commit/push operations!

@@ -24,7 +24,7 @@ Mass git operations and compliance validations must be executed in a safe, trace
 - **Action**: Check if a repository is fully compliant with ecosystem rules before attempting any synchronization or pushing.
 - **Verification Command**:
   ```bash
-  python3 20-Scripts/fleet-commander.py --repo <repo_name> --dry-run
+  python3 08-Base-Scripts/main.py fleet-commander --repo <repo_name> --dry-run
   ```
 - **Audited Zones**: The engine scans for proper YAML frontmatter headers in standard markdown files, validates standard naming conventions, and checks for `[FLEET-ARCHITECT]` signatures in GitHub actions workflow files.
 
@@ -32,7 +32,7 @@ Mass git operations and compliance validations must be executed in a safe, trace
 - **Action**: Always simulate global branch checking, tagging, or commits prior to executing destructive actions on GitHub.
 - **Verification Command**:
   ```bash
-  python3 20-Scripts/fleet-commander.py --fleet --dry-run -m "chore(fleet): standardizing setup"
+  python3 08-Base-Scripts/main.py fleet-commander --fleet --dry-run -m "chore(fleet): standardizing setup"
   ```
 - **Audit Verification**: Verify the generated console output for any errors or blocked repository listings.
 

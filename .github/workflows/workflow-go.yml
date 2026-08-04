@@ -57,6 +57,10 @@ jobs:
               fi
             done
           fi
+          if [ -f go.sum ]; then
+            sed -i.bak '/github.com\/Bastien-Antigravity/d' go.sum 2>/dev/null || sed -i '' '/github.com\/Bastien-Antigravity/d' go.sum 2>/dev/null || true
+            rm -f go.sum.bak
+          fi
 
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v7

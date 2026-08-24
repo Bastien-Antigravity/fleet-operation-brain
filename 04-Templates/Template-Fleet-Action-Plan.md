@@ -3,9 +3,10 @@ microservice: obsidian-brain
 type: fleet-op
 status: active
 tags:
-  - '#service/obsidian-brain'
-  - '#type/fleet-op'
-  - '#state/active'
+- '#service/obsidian-brain'
+- '#type/fleet-op'
+- '#state/active'
+- '#zone/3-fleet'
 ---
 
 # Fleet Action Plan: [Name]

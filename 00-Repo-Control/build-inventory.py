@@ -155,17 +155,19 @@ class MInventoryBuilder:
                 exclude = self._is_knowledge_base(repo_path=raw_path, workspace_root=workspace_root)
                 source = "auto"
 
+            repo_type = self._detect_repo_type(repo_name=name, is_excluded=exclude)
             entry: typingDict[str, typingAny] = {
                 "name": name,
                 "path": repo["path"],
                 "remote": repo["remote"],
                 "master_branch": repo["master_branch"],
+                "repo_type": repo_type,
             }
             if exclude:
                 entry["exclude_from_compliance"] = True
 
             flag_icon = "⛔ EXCLUDED" if exclude else "✅ COMPLIANT"
-            self.logger.info("{0} :    {1:<30} {2}  [{3}]".format(self.Name, name, flag_icon, source))
+            self.logger.info("{0} :    {1:<30} {2}  [{3}] [{4}]".format(self.Name, name, flag_icon, repo_type, source))
             repositories.append(entry)
 
         # Step 5: Final doc
@@ -269,6 +271,23 @@ class MInventoryBuilder:
             return False
 
         return not self._has_code_at_root(repo_path=repo_path)
+
+    # -----------------------------------------------------------------------------------------------
+
+    def _detect_repo_type(self, *, repo_name: str, is_excluded: bool) -> str:
+        libraries = {
+            "microservice-toolbox", "universal-logger", "flexible-logger",
+            "distributed-config", "safe-socket"
+        }
+        orchestration = {
+            "sandbox-testing", "docker-deployment", "obsidian-brain"
+        }
+        if repo_name in libraries:
+            return "library"
+        elif is_excluded or repo_name in orchestration:
+            return "orchestration"
+        else:
+            return "level1-microservice"
 
     # -----------------------------------------------------------------------------------------------
 

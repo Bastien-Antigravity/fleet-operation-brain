@@ -1,11 +1,15 @@
 ---
-title: "AI Agent Rulebook: New Repository Creation, Versioning & Makefile Standards"
-type: "template-guide"
+title: 'AI Agent Rulebook: New Repository Creation, Versioning & Makefile Standards'
+type: template-guide
 tags:
-  - "#zone/3-fleet"
-  - "#type/guide"
-  - "#tech/git"
-  - "#state/active"
+- '#zone/3-fleet'
+- '#type/guide'
+- '#tech/git'
+- '#state/active'
+- '#service/08-Base-Scripts'
+- '#type/template-guide'
+microservice: 08-Base-Scripts
+status: active
 ---
 
 # 🤖 AI Agent Rulebook: New Repository, Versioning & Makefile Standards

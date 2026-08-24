@@ -169,6 +169,8 @@ class FleetManager:
             self._handle_commit(inventory=inventory, workers=optimal_workers, args=args)
         elif command == "tag":
             self._handle_tag(inventory=inventory, workers=optimal_workers, args=args)
+        elif command == "tag-reset":
+            self._handle_tag_reset(inventory=inventory, workers=optimal_workers)
         elif command == "branch":
             self._handle_branch(inventory=inventory, workers=optimal_workers, args=args)
         elif command == "template":
@@ -647,6 +649,31 @@ class FleetManager:
 
     # -----------------------------------------------------------------------------------------------
 
+    def _handle_tag_reset(self, *, inventory: typingDict[str, typingAny], workers: int) -> None:
+        tag_name = "v0.0.1"
+        self.logger.info("{0} : 🏷️ Resetting tags across fleet to single tag '{1}'...".format(self.Name, tag_name))
+        with concurrentThreadPoolExecutor(max_workers=workers) as executor:
+            def _do(repo):
+                path = repo["path"]
+                name = repo["name"]
+                if not osPathExists(path): return "[ {0} ] MISSING".format(name)
+                
+                tags_out, _, _ = self.run_git(path=pathlibPath(path), args=["tag"])
+                tags = [t.strip() for t in tags_out.splitlines() if t.strip()]
+                
+                for t in tags:
+                    if t != tag_name:
+                        self.run_git(path=pathlibPath(path), args=["tag", "-d", t])
+                        self.run_git(path=pathlibPath(path), args=["push", "origin", "--delete", t])
+                        
+                self.run_git(path=pathlibPath(path), args=["tag", "-a", tag_name, "-m", "Release " + tag_name])
+                _, err, code = self.run_git(path=pathlibPath(path), args=["push", "origin", tag_name])
+                return "[ {0} ] TAG RESET OK ({1})".format(name, tag_name) if code == 0 else "[ {0} ] LOCAL TAG RESET OK ({1})".format(name, tag_name)
+            results = list(executor.map(_do, inventory["repositories"]))
+        for r in results: self.logger.info("{0} : {1}".format(self.Name, r))
+
+    # -----------------------------------------------------------------------------------------------
+
     def _handle_branch(self, *, inventory: typingDict[str, typingAny], workers: int, args: typingList[str]) -> None:
         branch_name = args[0] if args else None
         if not branch_name: return
@@ -882,7 +909,7 @@ if __name__ == "__main__":
         default="status",
         choices=[
             "status", "sync", "vault-sync", "audit", "commit",
-            "tag", "branch", "template", "cleanup", "restore",
+            "tag", "tag-reset", "branch", "template", "cleanup", "restore",
             "discover", "refresh", "attach"
         ],
         help="Command to run (default: status)"

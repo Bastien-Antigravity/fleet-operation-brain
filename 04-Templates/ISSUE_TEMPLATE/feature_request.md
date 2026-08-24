@@ -4,7 +4,14 @@ about: Suggest an idea for this project
 title: ''
 labels: enhancement
 assignees: ''
-
+microservice: 08-Base-Scripts
+type: note
+status: active
+tags:
+- '#service/08-Base-Scripts'
+- '#type/note'
+- '#state/active'
+- '#zone/3-fleet'
 ---
 
 **Is your feature request related to a problem? Please describe.**

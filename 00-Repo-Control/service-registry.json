@@ -1,7 +1,40 @@
 {
   "fleet_name": "Bastien-Antigravity",
+  "version": "0.0.1",
   "registry": "ghcr.io/bastien-antigravity",
   "services": {
+    "libraries": [
+      {
+        "name": "microservice-toolbox",
+        "description": "Cross-language utilities, config, networking, and lifecycle bootstrap SDK",
+        "classification": "library",
+        "languages": ["go", "python", "rust"]
+      },
+      {
+        "name": "universal-logger",
+        "description": "Standardized logging interface, CGO bridge, and multi-backend logger facade",
+        "classification": "library",
+        "languages": ["go", "python", "rust", "cpp", "vba"]
+      },
+      {
+        "name": "flexible-logger",
+        "description": "High-performance underlying log engine and file/console appender core",
+        "classification": "library",
+        "languages": ["go"]
+      },
+      {
+        "name": "distributed-config",
+        "description": "Dynamic configuration client SDK, RCU atomic pointer state manager, and CGO bridge",
+        "classification": "library",
+        "languages": ["go", "python", "rust", "cpp", "vba"]
+      },
+      {
+        "name": "safe-socket",
+        "description": "Framed TCP socket transport protocol andCap'n Proto / Protobuf framing library",
+        "classification": "library",
+        "languages": ["go"]
+      }
+    ],
     "infrastructure": [
       {
         "name": "timescale-db",
@@ -25,7 +58,8 @@
         "image": "ghcr.io/bastien-antigravity/config-server",
         "default_port": 1862,
         "protocol": "SafeSocket",
-        "archetype": "Microservice"
+        "archetype": "Microservice",
+        "classification": "level1_microservice"
       },
       {
         "name": "log-server",
@@ -33,35 +67,103 @@
         "default_port": 9020,
         "grpc_port": 9021,
         "protocol": "SafeSocket/gRPC",
-        "archetype": "Microservice"
+        "archetype": "Microservice",
+        "classification": "level1_microservice"
       },
       {
         "name": "notif-server",
         "image": "ghcr.io/bastien-antigravity/notif-server",
         "default_port": 1026,
         "protocol": "SafeSocket",
-        "archetype": "Microservice"
+        "archetype": "Microservice",
+        "classification": "level1_microservice"
       },
       {
         "name": "tele-remote",
         "image": "ghcr.io/bastien-antigravity/tele-remote",
         "default_port": 1863,
         "protocol": "gRPC/Telegram",
-        "archetype": "Microservice"
+        "archetype": "Microservice",
+        "classification": "level1_microservice"
       },
       {
-        "name": "web-interface",
-        "image": "ghcr.io/bastien-antigravity/web",
-        "default_port": 5000,
-        "protocol": "HTTP",
-        "archetype": "Web"
+        "name": "watchdog-agent",
+        "image": "ghcr.io/bastien-antigravity/watchdog-agent",
+        "protocol": "HTTP/NATS",
+        "archetype": "Microservice",
+        "classification": "level1_microservice"
       },
       {
         "name": "ontime-scheduler",
         "image": "ghcr.io/bastien-antigravity/ontime-scheduler",
         "default_port": 8080,
         "protocol": "HTTP",
-        "archetype": "Microservice"
+        "archetype": "Microservice",
+        "classification": "level1_microservice"
+      },
+      {
+        "name": "data-ingestor",
+        "image": "ghcr.io/bastien-antigravity/data-ingestor",
+        "protocol": "NATS",
+        "archetype": "Microservice",
+        "classification": "level1_microservice"
+      },
+      {
+        "name": "orderbook-aggregator",
+        "image": "ghcr.io/bastien-antigravity/orderbook-aggregator",
+        "protocol": "NATS",
+        "archetype": "Microservice",
+        "classification": "level1_microservice"
+      },
+      {
+        "name": "technical-analysis",
+        "image": "ghcr.io/bastien-antigravity/technical-analysis",
+        "protocol": "SQLite/NATS",
+        "archetype": "Microservice",
+        "classification": "level1_microservice"
+      },
+      {
+        "name": "fundamental-analysis",
+        "image": "ghcr.io/bastien-antigravity/fundamental-analysis",
+        "protocol": "REST",
+        "archetype": "Microservice",
+        "classification": "level1_microservice"
+      },
+      {
+        "name": "market-observer",
+        "image": "ghcr.io/bastien-antigravity/market-observer",
+        "protocol": "NATS",
+        "archetype": "Microservice",
+        "classification": "level1_microservice"
+      },
+      {
+        "name": "enhanced-backtesting",
+        "image": "ghcr.io/bastien-antigravity/enhanced-backtesting",
+        "protocol": "REST",
+        "archetype": "Microservice",
+        "classification": "level1_microservice"
+      },
+      {
+        "name": "mt5-gateway",
+        "image": "ghcr.io/bastien-antigravity/mt5-gateway",
+        "protocol": "gRPC",
+        "archetype": "Microservice",
+        "classification": "level1_microservice"
+      },
+      {
+        "name": "demo-surface-vol",
+        "image": "ghcr.io/bastien-antigravity/demo-surface-vol",
+        "protocol": "REST",
+        "archetype": "Microservice",
+        "classification": "level1_microservice"
+      },
+      {
+        "name": "web-interface",
+        "image": "ghcr.io/bastien-antigravity/web",
+        "default_port": 5000,
+        "protocol": "HTTP",
+        "archetype": "Web",
+        "classification": "level1_microservice"
       }
     ]
   }

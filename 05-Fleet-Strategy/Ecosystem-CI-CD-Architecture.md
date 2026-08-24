@@ -1,11 +1,15 @@
 ---
-title: "Ecosystem CI/CD Strategy & Long-Term Workflow Architecture"
-type: "architecture-strategy"
+title: Ecosystem CI/CD Strategy & Long-Term Workflow Architecture
+type: architecture-strategy
 tags:
-  - "#zone/3-fleet"
-  - "#type/architecture"
-  - "#tech/ci-cd"
-  - "#state/active"
+- '#zone/3-fleet'
+- '#type/architecture'
+- '#tech/ci-cd'
+- '#state/active'
+- '#service/08-Base-Scripts'
+- '#type/architecture-strategy'
+microservice: 08-Base-Scripts
+status: active
 ---
 
 # 🚀 Ecosystem CI/CD Strategy & Long-Term Workflow Architecture

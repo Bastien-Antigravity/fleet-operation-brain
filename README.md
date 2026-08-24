@@ -25,6 +25,16 @@ Welcome to the **Strategic Command Deck**. This brain is the cockpit for mass-ex
 - `02-Deployment-Logs/`: Historical audit logs of fleet modifications and deployment reports.
 - `05-Fleet-Strategy/`: Global conventions, laws, and CI/CD standardization policies.
 
+## 🧩 Ecosystem Taxonomy Overview
+
+Repositories in the Bastien-Antigravity ecosystem are versioned at `0.0.1` and split into three Tiers:
+
+1. **Shared Libraries (SDKs, Protocols & Toolboxes)**: `microservice-toolbox`, `universal-logger`, `flexible-logger`, `distributed-config`, `safe-socket`.
+2. **Level 1 Microservices (Independent Daemons & Apps)**: Standalone services like `config-server` (1862), `log-server` (9020/9021), `notif-server` (1026), `tele-remote` (1863), `watchdog-agent`, `ontime-scheduler` (8080), domain engines, and `web-interface` (5000).
+3. **Orchestration & Brains**: `sandbox-testing`, `docker-deployment`, `obsidian-brain`.
+
+For details, see [Ecosystem Taxonomy Guide](../03-Tech-Stack/quick-overview/Ecosystem-Taxonomy-Guide.md) and [Ecosystem Onboarding Guide](quick-overview/Ecosystem-Onboarding-Guide.md).
+
 ## 🛠️ Fleet Manager Quick Reference
 
 | Command | Action Description | Example Usage |

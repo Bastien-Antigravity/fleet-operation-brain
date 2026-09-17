@@ -53,6 +53,6 @@ Mass git operations and compliance validations must be executed in a safe, trace
   ✨ Created context firewall ignore file: deployments/.aiignore
   📦 FOUND 13 HISTORICAL LOG(S) TO ARCHIVE:
   [-] Archived: LOG-2026-05-04-Develop-Sync.md -> deployments/LOG-2026-05-04-Develop-Sync.md
-  ✨ Updated Deployment-Logs-MOC.md with the active layout!
+  ✨ Updated 02-Deployment-Logs/README.md with the active layout!
   ```
 - **Firewall Check**: Verify that `deployments/.aiignore` and `plans/.aiignore` contain `*` (which effectively tells Gemini, MCP, and AI models to completely bypass indexing the archive directory).

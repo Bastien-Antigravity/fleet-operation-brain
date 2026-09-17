@@ -35,7 +35,7 @@ graph TD
 ```
 
 ### 1. Registry & Orchestration: `00-Repo-Control/`
-- **`inventory.json`**: The **Single Source of Truth** for the registry of all repositories in the Bastien-Antigravity fleet. It specifies repository names, local paths, remotes, and branch defaults.
+- **`inventory.json`**: The **Single Source of Truth** for the registry of all repositories in the Bastien-Antigravity fleet. It specifies repository names, local paths, remotes, branch defaults, `is_core` flags, and deployment `modes` (`local`, `docker`, `production`). It is symlinked directly into `docker-deployment/modes/` for seamless cross-mode fleet orchestration.
 - **`fleet-manager.py`**: Command-line tool for mass-repository administration (e.g., discover, status, branch, tag, sync, commit, etc.).
 
 ### 2. Strategic Execution: `01-Fleet-Action-Plans/`

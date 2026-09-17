@@ -8,7 +8,11 @@
       "remote": "https://github.com/Bastien-Antigravity/nexus-strategic-brain.git",
       "master_branch": "develop",
       "repo_type": "orchestration",
-      "exclude_from_compliance": true
+      "exclude_from_compliance": true,
+      "is_core": false,
+      "modes": [
+        "local"
+      ]
     },
     {
       "name": "02-Business-BDD",
@@ -16,7 +20,11 @@
       "remote": "https://github.com/Bastien-Antigravity/business-bdd-brain.git",
       "master_branch": "develop",
       "repo_type": "orchestration",
-      "exclude_from_compliance": true
+      "exclude_from_compliance": true,
+      "is_core": false,
+      "modes": [
+        "local"
+      ]
     },
     {
       "name": "03-Tech-Stack",
@@ -24,7 +32,11 @@
       "remote": "https://github.com/Bastien-Antigravity/tech-stack-brain.git",
       "master_branch": "develop",
       "repo_type": "orchestration",
-      "exclude_from_compliance": true
+      "exclude_from_compliance": true,
+      "is_core": false,
+      "modes": [
+        "local"
+      ]
     },
     {
       "name": "04-Rapid-Prototyping",
@@ -32,7 +44,11 @@
       "remote": "https://github.com/Bastien-Antigravity/rapid-prototyping-brain.git",
       "master_branch": "develop",
       "repo_type": "orchestration",
-      "exclude_from_compliance": true
+      "exclude_from_compliance": true,
+      "is_core": false,
+      "modes": [
+        "local"
+      ]
     },
     {
       "name": "05-Fleet-Operation",
@@ -40,7 +56,11 @@
       "remote": "https://github.com/Bastien-Antigravity/fleet-operation-brain.git",
       "master_branch": "develop",
       "repo_type": "orchestration",
-      "exclude_from_compliance": true
+      "exclude_from_compliance": true,
+      "is_core": false,
+      "modes": [
+        "local"
+      ]
     },
     {
       "name": "07-Core-KMS",
@@ -48,112 +68,192 @@
       "remote": "https://github.com/Bastien-Antigravity/core-kms-brain.git",
       "master_branch": "develop",
       "repo_type": "orchestration",
-      "exclude_from_compliance": true
+      "exclude_from_compliance": true,
+      "is_core": false,
+      "modes": [
+        "local"
+      ]
     },
     {
       "name": "09-RAG-Engine",
       "path": "./obsidian-brain/09-RAG-Engine",
       "remote": "https://github.com/Bastien-Antigravity/obsidian-rag-mcp.git",
       "master_branch": "develop",
-      "repo_type": "level1-microservice"
+      "repo_type": "level1-microservice",
+      "is_core": false,
+      "modes": [
+        "local",
+        "docker"
+      ]
     },
     {
       "name": "10-Agent-Factory",
       "path": "./obsidian-brain/10-Agent-Factory",
       "remote": "https://github.com/Bastien-Antigravity/oop-agent-factory.git",
       "master_branch": "develop",
-      "repo_type": "level1-microservice"
+      "repo_type": "level1-microservice",
+      "is_core": false,
+      "modes": [
+        "local",
+        "docker"
+      ]
     },
     {
       "name": "config-server",
       "path": "./config-server",
       "remote": "https://github.com/Bastien-Antigravity/config-server.git",
       "master_branch": "develop",
-      "repo_type": "level1-microservice"
+      "repo_type": "level1-microservice",
+      "is_core": true,
+      "modes": [
+        "local",
+        "docker",
+        "production"
+      ]
     },
     {
       "name": "data-ingestor",
       "path": "./data-ingestor",
       "remote": "https://github.com/Bastien-Antigravity/data-ingestor.git",
       "master_branch": "develop",
-      "repo_type": "level1-microservice"
+      "repo_type": "level1-microservice",
+      "is_core": false,
+      "modes": [
+        "local",
+        "docker"
+      ]
     },
     {
       "name": "demo-surface-vol",
       "path": "./demo-surface-vol",
       "remote": "https://github.com/Bastien-Antigravity/demo-surface-vol.git",
       "master_branch": "develop",
-      "repo_type": "level1-microservice"
+      "repo_type": "level1-microservice",
+      "is_core": false,
+      "modes": [
+        "local",
+        "docker"
+      ]
     },
     {
       "name": "distributed-config",
       "path": "./distributed-config",
       "remote": "https://github.com/Bastien-Antigravity/distributed-config.git",
       "master_branch": "develop",
-      "repo_type": "library"
+      "repo_type": "library",
+      "is_core": true,
+      "modes": [
+        "local"
+      ]
     },
     {
       "name": "docker-deployment",
       "path": "./docker-deployment",
       "remote": "https://github.com/Bastien-Antigravity/docker-deployment.git",
       "master_branch": "develop",
-      "repo_type": "orchestration"
+      "repo_type": "orchestration",
+      "is_core": true,
+      "modes": [
+        "local",
+        "docker",
+        "production"
+      ]
     },
     {
       "name": "enhanced-backtesting",
       "path": "./enhanced-backtesting",
       "remote": "https://github.com/Bastien-Antigravity/enhanced-backtesting.git",
       "master_branch": "develop",
-      "repo_type": "level1-microservice"
+      "repo_type": "level1-microservice",
+      "is_core": false,
+      "modes": [
+        "local",
+        "docker"
+      ]
     },
     {
       "name": "flexible-logger",
       "path": "./flexible-logger",
       "remote": "https://github.com/Bastien-Antigravity/flexible-logger.git",
       "master_branch": "develop",
-      "repo_type": "library"
+      "repo_type": "library",
+      "is_core": false,
+      "modes": [
+        "local"
+      ]
     },
     {
       "name": "fundamental-analysis",
       "path": "./fundamental-analysis",
       "remote": "https://github.com/Bastien-Antigravity/fundamental-analysis.git",
       "master_branch": "develop",
-      "repo_type": "level1-microservice"
+      "repo_type": "level1-microservice",
+      "is_core": false,
+      "modes": [
+        "local",
+        "docker"
+      ]
     },
     {
       "name": "log-server",
       "path": "./log-server",
       "remote": "https://github.com/Bastien-Antigravity/log-server.git",
       "master_branch": "develop",
-      "repo_type": "level1-microservice"
+      "repo_type": "level1-microservice",
+      "is_core": true,
+      "modes": [
+        "local",
+        "docker",
+        "production"
+      ]
     },
     {
       "name": "market-observer",
       "path": "./market-observer",
       "remote": "https://github.com/Bastien-Antigravity/market-observer.git",
       "master_branch": "develop",
-      "repo_type": "level1-microservice"
+      "repo_type": "level1-microservice",
+      "is_core": false,
+      "modes": [
+        "local",
+        "docker"
+      ]
     },
     {
       "name": "microservice-toolbox",
       "path": "./microservice-toolbox",
       "remote": "https://github.com/Bastien-Antigravity/microservice-toolbox.git",
       "master_branch": "develop",
-      "repo_type": "library"
+      "repo_type": "library",
+      "is_core": true,
+      "modes": [
+        "local"
+      ]
     },
     {
       "name": "mt5-gateway",
       "path": "./mt5-gateway",
       "remote": "https://github.com/Bastien-Antigravity/mt5-gateway.git",
       "master_branch": "develop",
-      "repo_type": "level1-microservice"
+      "repo_type": "level1-microservice",
+      "is_core": false,
+      "modes": [
+        "local",
+        "docker"
+      ]
     },
     {
       "name": "notif-server",
       "path": "./notif-server",
       "remote": "https://github.com/Bastien-Antigravity/notif-server.git",
       "master_branch": "develop",
-      "repo_type": "level1-microservice"
+      "repo_type": "level1-microservice",
+      "is_core": true,
+      "modes": [
+        "local",
+        "docker",
+        "production"
+      ]
     },
     {
       "name": "obsidian-brain",
@@ -161,70 +261,119 @@
       "remote": "https://github.com/Bastien-Antigravity/obsidian-brain",
       "master_branch": "develop",
       "repo_type": "orchestration",
-      "exclude_from_compliance": true
+      "exclude_from_compliance": true,
+      "is_core": true,
+      "modes": [
+        "local",
+        "docker",
+        "production"
+      ]
     },
     {
       "name": "ontime-scheduler",
       "path": "./ontime-scheduler",
       "remote": "https://github.com/Bastien-Antigravity/ontime-scheduler.git",
       "master_branch": "develop",
-      "repo_type": "level1-microservice"
+      "repo_type": "level1-microservice",
+      "is_core": false,
+      "modes": [
+        "local",
+        "docker"
+      ]
     },
     {
       "name": "orderbook-aggregator",
       "path": "./orderbook-aggregator",
       "remote": "https://github.com/Bastien-Antigravity/orderbook-aggregator.git",
       "master_branch": "develop",
-      "repo_type": "level1-microservice"
+      "repo_type": "level1-microservice",
+      "is_core": false,
+      "modes": [
+        "local",
+        "docker"
+      ]
     },
     {
       "name": "safe-socket",
       "path": "./safe-socket",
       "remote": "https://github.com/Bastien-Antigravity/safe-socket.git",
       "master_branch": "develop",
-      "repo_type": "library"
+      "repo_type": "library",
+      "is_core": false,
+      "modes": [
+        "local"
+      ]
     },
     {
       "name": "sandbox-testing",
       "path": "./sandbox-testing",
       "remote": "https://github.com/Bastien-Antigravity/sandbox-testing.git",
       "master_branch": "develop",
-      "repo_type": "orchestration"
+      "repo_type": "orchestration",
+      "is_core": false,
+      "modes": [
+        "local"
+      ]
     },
     {
       "name": "technical-analysis",
       "path": "./technical-analysis",
       "remote": "https://github.com/Bastien-Antigravity/technical-analysis.git",
       "master_branch": "develop",
-      "repo_type": "level1-microservice"
+      "repo_type": "level1-microservice",
+      "is_core": false,
+      "modes": [
+        "local",
+        "docker"
+      ]
     },
     {
       "name": "tele-remote",
       "path": "./tele-remote",
       "remote": "https://github.com/Bastien-Antigravity/tele-remote.git",
       "master_branch": "develop",
-      "repo_type": "level1-microservice"
+      "repo_type": "level1-microservice",
+      "is_core": true,
+      "modes": [
+        "local",
+        "docker",
+        "production"
+      ]
     },
     {
       "name": "universal-logger",
       "path": "./universal-logger",
       "remote": "https://github.com/Bastien-Antigravity/universal-logger.git",
       "master_branch": "develop",
-      "repo_type": "library"
+      "repo_type": "library",
+      "is_core": true,
+      "modes": [
+        "local"
+      ]
     },
     {
       "name": "watchdog-agent",
       "path": "./watchdog-agent",
       "remote": "https://github.com/Bastien-Antigravity/watchdog-agent.git",
       "master_branch": "develop",
-      "repo_type": "level1-microservice"
+      "repo_type": "level1-microservice",
+      "is_core": true,
+      "modes": [
+        "local"
+      ]
     },
     {
       "name": "web-interface",
       "path": "./web-interface",
       "remote": "https://github.com/Bastien-Antigravity/web-interface.git",
       "master_branch": "develop",
-      "repo_type": "level1-microservice"
+      "repo_type": "level1-microservice",
+      "is_core": true,
+      "modes": [
+        "local",
+        "docker",
+        "production"
+      ]
     }
   ]
 }

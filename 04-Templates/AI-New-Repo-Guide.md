@@ -75,8 +75,10 @@ Every newly created code repository MUST contain the following files at the root
 - Initialized repositories start at `0.0.1`.
 - All build tools, packages, and `Makefile` scripts MUST read `VERSION.txt` as their single source of truth.
 
-### B. Standardized `Makefile` Targets
-Every repository MUST provide a root `Makefile` implementing the following standard target contracts:
+### B. Standardized `Makefile` Targets (Compiled Languages Only)
+Every compiled repository (Go, Rust, C++) MUST provide a root `Makefile` implementing the standard target contracts.
+> [!IMPORTANT]
+> **Python Tooling Purity**: Pure Python repositories DO NOT generate a `Makefile`. They rely natively on `pytest`, `requirements.txt`, and virtual environments.
 
 ```makefile
 VERSION := $(shell cat VERSION.txt 2>/dev/null || echo "0.0.1")
@@ -92,17 +94,15 @@ build:
 	@echo "Building repository (version $(VERSION))..."
 	@if [ -f "go.mod" ]; then go build ./... || true; fi
 	@if [ -f "Cargo.toml" ]; then cargo build --release || true; fi
-	@if [ -f "setup.py" ] || [ -f "pyproject.toml" ]; then python3 -m build || true; fi
 
 test:
 	@echo "Running tests (version $(VERSION))..."
 	@if [ -f "go.mod" ]; then go test ./... 2>/dev/null || go test ./src/... 2>/dev/null || true; fi
 	@if [ -f "Cargo.toml" ]; then cargo test 2>/dev/null || true; fi
-	@if [ -f "requirements.txt" ] || [ -f "pyproject.toml" ]; then pytest 2>/dev/null || true; fi
 
 clean:
 	@echo "Cleaning build artifacts..."
-	@rm -rf dist build *.egg-info target/
+	@rm -rf dist build *.egg-info target/ bin/
 ```
 
 ---
@@ -110,7 +110,7 @@ clean:
 ## ⚙️ 4. Standardized GitHub Actions Workflows
 
 ### Continuous Integration (`.github/workflows/ci.yml`)
-Must be copied directly from `05-Fleet-Operation/04-Templates/Microservice/ci.yml`:
+Generated automatically or copied from `05-Fleet-Operation/04-Templates/Microservice/ci.yml`:
 
 ```yaml
 # [FLEET-ARCHITECT] Continuous Integration
@@ -118,15 +118,18 @@ Must be copied directly from `05-Fleet-Operation/04-Templates/Microservice/ci.ym
 name: Fleet CI
 on:
   push:
-    branches: [ develop, main ]
+    branches: [ develop ]
   pull_request:
-    branches: [ develop, main ]
+    branches: [ develop ]
 
 jobs:
   fleet-ci:
     uses: Bastien-Antigravity/fleet-operation-brain/.github/workflows/master-ci.yml@develop
     secrets: inherit
 ```
+
+> [!TIP]
+> **Automated Scaffolding**: Always use `python3 08-Base-Scripts/main.py scaffold-microservice --name <name> --lang <go|python|rust>` to automatically generate all mandatory files, workflows, and BDD specifications in full compliance.
 
 ---
 

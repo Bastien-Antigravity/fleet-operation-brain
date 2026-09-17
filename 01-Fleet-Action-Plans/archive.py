@@ -9,7 +9,7 @@ into the 'plans/' folder (with context firewall ignore rules).
 DATA FLOW:
 1. Scans the directory root for *.md plan files.
 2. Reads frontmatter to identify 'completed' or historical plans.
-3. Moves completed plans to plans/ and updates Fleet-Action-Plans-MOC.md.
+3. Moves completed plans to plans/ and updates README.md.
 
 KEY PARAMETERS:
 - None
@@ -87,7 +87,7 @@ class FleetActionPlansArchiver:
         self._ensure_firewall(archive_dir=archive_dir)
 
         # 3. Scan for markdown files
-        targets = [f for f in root.glob("*.md") if f.name != "README.md" and f.name != "Fleet-Action-Plans-MOC.md"]
+        targets = [f for f in root.glob("*.md") if f.name != "README.md"]
 
         if not targets:
             self.logger.info("{0} : ✨ FLEET ACTION PLANS DIRECTORY IS ALREADY PERFECT!".format(self.Name))
@@ -176,10 +176,10 @@ class FleetActionPlansArchiver:
 
     def _update_moc(self, *, retained: typingList[pathlibPath]) -> None:
         root = pathlibPath(__file__).resolve().parent
-        moc_path = root.parent / "Fleet-Action-Plans-MOC.md"
-        if moc_path.exists():
+        readme_path = root / "README.md"
+        if readme_path.exists():
             try:
-                with open(moc_path, "r", encoding="utf-8") as f:
+                with open(readme_path, "r", encoding="utf-8") as f:
                     content = f.read()
 
                 fm_match = reMatch(r"^---[\s\S]*?---\n*", content)
@@ -189,18 +189,23 @@ class FleetActionPlansArchiver:
                 
                 new_content = (
                     "{0}"
-                    "# Fleet Action Plans MOC\n\n"
-                    "### Active Migration Plans\n"
+                    "# 📋 Fleet Action Plans\n\n"
+                    "This index manages active and historical fleet migrations and multi-repository updates in Mode 3 (Orchestrator).\n\n"
+                    "## 🚀 Active Migration Plans\n"
                     "{1}\n\n"
-                    "### Archived Historical Plans\n"
-                    "> Stored in the `plans/` firewall zone.\n"
+                    "## 📦 Archived Historical Plans\n"
+                    "Historical plans are archived in [`plans/`](plans/) with context firewall ignore rules (`.aiignore`, `.geminiignore`, `.mcpignore`) to maintain minimal context weight for AI agents.\n\n"
+                    "- [[FAP-2026-05-03-GitHub-Sync]]\n"
+                    "- [[2026-05-11-Standardize-GitHub-CI]]\n\n"
+                    "## 🛠️ Archiving Workflow\n"
+                    "Run `python3 archive.py` to automatically detect completed plans and move them into `plans/`, updating this index.\n"
                 ).format(fm, links)
 
-                with open(moc_path, "w", encoding="utf-8") as f:
+                with open(readme_path, "w", encoding="utf-8") as f:
                     f.write(new_content)
-                self.logger.info("{0} : ✨ Updated Fleet-Action-Plans-MOC.md".format(self.Name))
+                self.logger.info("{0} : ✨ Updated README.md index".format(self.Name))
             except Exception as e:
-                self.logger.error("{0} : Failed to update MOC: {1}".format(self.Name, e))
+                self.logger.error("{0} : Failed to update index: {1}".format(self.Name, e))
 
 
 # -----------------------------------------------------------------------------------------------

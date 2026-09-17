@@ -9,7 +9,7 @@ into the 'deployments/' folder (with context firewall ignore rules).
 DATA FLOW:
 1. Scans the directory root for *.md log files.
 2. Extracts dates from the filenames to determine the latest log.
-3. Moves historical logs to deployments/ and updates Deployment-Logs-MOC.md.
+3. Moves historical logs to deployments/ and updates README.md.
 
 KEY PARAMETERS:
 - None
@@ -87,7 +87,7 @@ class DeploymentLogsArchiver:
         self._ensure_firewall(archive_dir=archive_dir)
 
         # 3. Scan for log files
-        targets = [f for f in root.glob("*.md") if f.name != "README.md" and f.name != "Deployment-Logs-MOC.md"]
+        targets = [f for f in root.glob("*.md") if f.name != "README.md"]
 
         if not targets:
             self.logger.info("{0} : ✨ DEPLOYMENT LOGS DIRECTORY IS ALREADY PERFECT!".format(self.Name))
@@ -155,10 +155,10 @@ class DeploymentLogsArchiver:
 
     def _update_moc(self, *, latest_log: typingDict[str, typingAny]) -> None:
         root = pathlibPath(__file__).resolve().parent
-        moc_path = root.parent / "Deployment-Logs-MOC.md"
-        if moc_path.exists():
+        readme_path = root / "README.md"
+        if readme_path.exists():
             try:
-                with open(moc_path, "r", encoding="utf-8") as f:
+                with open(readme_path, "r", encoding="utf-8") as f:
                     content = f.read()
 
                 fm_match = reMatch(r"^---[\s\S]*?---\n*", content)
@@ -166,18 +166,21 @@ class DeploymentLogsArchiver:
 
                 new_content = (
                     "{0}"
-                    "# Deployment Logs MOC\n\n"
-                    "### Active Deployment Log\n"
+                    "# 🛰️ Fleet Deployment Logs\n\n"
+                    "Historical audit logs of fleet modifications, synchronization passes, and deployment reports across the Bastien-Antigravity ecosystem.\n\n"
+                    "## 🌟 Latest Active Deployment Log\n"
                     "- [[{1}]]\n\n"
-                    "### Archived Historical Logs\n"
-                    "> Stored in the `deployments/` firewall zone.\n"
+                    "## 📦 Archived Historical Logs\n"
+                    "Historical logs are stored in [`deployments/`](deployments/) with context firewall ignore rules (`.aiignore`, `.geminiignore`, `.mcpignore`) to keep AI agent working context lightweight.\n\n"
+                    "## 🛠️ Archiving Workflow\n"
+                    "Run `python3 archive.py` to automatically retain only the latest active deployment log in this directory and archive all older logs into `deployments/`, updating this index.\n"
                 ).format(fm, latest_log["path"].stem)
 
-                with open(moc_path, "w", encoding="utf-8") as f:
+                with open(readme_path, "w", encoding="utf-8") as f:
                     f.write(new_content)
-                self.logger.info("{0} : ✨ Updated Deployment-Logs-MOC.md".format(self.Name))
+                self.logger.info("{0} : ✨ Updated README.md index".format(self.Name))
             except Exception as e:
-                self.logger.error("{0} : Failed to update MOC: {1}".format(self.Name, e))
+                self.logger.error("{0} : Failed to update index: {1}".format(self.Name, e))
 
 
 # -----------------------------------------------------------------------------------------------

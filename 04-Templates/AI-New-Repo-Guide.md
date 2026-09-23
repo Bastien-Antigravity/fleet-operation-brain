@@ -1,69 +1,72 @@
 ---
-title: 'AI Agent Rulebook: New Repository Creation, Versioning & Makefile Standards'
-type: template-guide
+title: 'AI Agent Quick Guide: New Repository Creation, Versioning & Makefile Standards'
+type: guide
 tags:
 - '#zone/3-fleet'
 - '#type/guide'
 - '#tech/git'
 - '#state/active'
 - '#service/08-Base-Scripts'
-- '#type/template-guide'
 microservice: 08-Base-Scripts
 status: active
 ---
 
-# 🤖 AI Agent Rulebook: New Repository, Versioning & Makefile Standards
+# 🤖 AI Agent Quick Guide: New Repository, Versioning & Makefile Standards
 
-This document establishes the mandatory naming conventions, directory structure, `VERSION.txt` single source of truth, `Makefile` targets, `.gitignore` rules, and GitHub Actions workflow standards for any new repository initialized by AI Agents (FleetCommander, Orchestrator, Developer, Architect, Sentinel, IDE Agents).
+> [!IMPORTANT]
+> **Authoritative Specification**: The single source of truth for repository structure, root files, language anatomy, coding standards, and fleet integration touchpoints is:
+> 👉 **[[03-Repository-Structure|03 - Repository Structure & Microservice Creation Standard]]**
+> 
+> This document serves as a operational quick-reference for AI agents (FleetCommander, Orchestrator, Developer, Architect, Sentinel).
 
 ---
 
 ## 🏷️ 1. Repository Naming Conventions
 
-All repositories in the `Bastien-Antigravity` GitHub organization MUST follow strict naming patterns based on their architectural role:
+All repositories in the `Bastien-Antigravity` GitHub organization MUST follow strict naming patterns:
 
-| Category | Naming Schema | Examples | Description |
+| Category | Naming Schema | Canonical Examples | Description |
 | :--- | :--- | :--- | :--- |
 | **Microservices** | `<domain>-server` | `config-server`, `log-server`, `notif-server` | Core backend services with listening ports |
-| **Agents & Workers** | `<domain>-agent` | `watchdog-agent` | Background processing or monitoring agents |
-| **Gateways & Adaptors**| `<domain>-gateway` | `mt5-gateway` | Edge protocol adapters |
+| **Agents & Supervisors** | `<domain>-agent` | `watchdog-agent` | Background processing or monitoring agents |
+| **Gateways & Adaptors**| `<domain>-gateway` | `mt5-gateway` | Edge protocol adapters and hardware bridges |
 | **User Interfaces** | `<domain>-interface` | `web-interface` | Web frontend / dashboard applications |
-| **Shared Libraries** | `<feature>-<type>` | `flexible-logger`, `universal-logger`, `distributed-config`, `microservice-toolbox`, `safe-socket` | Cross-service libraries (Go/Python/Rust) |
+| **Domain Processing** | `<domain>-<worker>` | `market-observer`, `fundamental-analysis` | Event-driven processing engines |
+| **Shared Libraries** | `<feature>-<type>` | `microservice-toolbox`, `universal-logger`, `distributed-config`, `safe-socket` | Cross-service libraries (Go/Python/Rust) |
 | **Testing / Verification**| `<domain>-testing` | `sandbox-testing` | E2E integration test scenarios |
-| **Knowledge Vaults** | `<number>-<Name>` | `01-Strategic-Nexus`, `05-Fleet-Operation` | Governance and documentation vaults |
+| **Knowledge Vaults** | `<number>-<Name>` | `obsidian-brain` | Governance, architecture, and documentation vaults |
 
 ---
 
-## 📁 2. Mandatory Repository Structure & Files
+## 📁 2. Mandatory Repository Elements Checklist
 
-Every newly created code repository MUST contain the following files at the root level:
+Every repository created by AI agents MUST fulfill the 12 mandatory root elements defined in [[03-Repository-Structure]]:
 
 ```text
 <repo-name>/
 ├── .github/
 │   ├── CODEOWNERS
 │   ├── dependabot.yml
-│   ├── PULL_REQUEST_TEMPLATE.md
-│   ├── ISSUE_TEMPLATE/
-│   │   ├── bug_report.md
-│   │   └── feature_request.md
 │   └── workflows/
 │       ├── ci.yml                 # Mandatory for ALL code repos
-│       └── release.yml            # Mandatory for Shared Polyglot Libraries
-├── quick-overview/                # Mandatory Isolation Zone structural docs
+│       └── release.yml            # For Shared Polyglot Libraries
+├── quick-overview/                # Mandatory Isolation Zone (human-only, excluded from AI)
 │   ├── Architecture-Overview.md
 │   ├── Features-Behavior.md
 │   ├── Testing-Playbook.md
-│   └── General-Misc.md
-├── .gitignore                     # Standard OS + Cache protections
+│   ├── General-Misc.md
+│   ├── .geminiignore
+│   ├── .mcpignore
+│   └── .aiignore
+├── .gitignore                     # Standard OS + cache + build protections
 ├── VERSION.txt                    # Single Source of Truth for Versioning (e.g. 0.0.1)
-├── Makefile                       # Standard Build/Test/Version tasks
-├── AI-Init.md                     # AI Onboarding & Quick Context
-├── AI-Project-DNA.md              # Architectural DNA & BDD specs
-├── AI-Session-State.md            # Active AI Session context
-├── README.md                      # Human & AI entry point
-├── TODO.md                        # Task backlog
-└── standalone.yaml                # AppConfig capabilities & configuration
+├── Makefile                       # Standard targets (all, build, test, race, vet, version, clean)
+├── AGENTS.md                      # Primary AI agent operating guide & prompt
+├── AI-Session-State.md            # Active AI session memory tracker
+├── Dockerfile                     # Multi-stage container build
+├── docker-compose.yml             # Local compose fragment (teleremote-network)
+├── README.md                      # Human & AI entry point linking to AGENTS.md
+└── standalone.yaml                # Symlink -> ../docker-deployment/modes/local/config/native.yaml
 ```
 
 ---
@@ -71,19 +74,18 @@ Every newly created code repository MUST contain the following files at the root
 ## 🔢 3. Versioning & Makefile Standard Rules
 
 ### A. Single Source of Truth (`VERSION.txt`)
-- Every repository MUST maintain a plain-text file `VERSION.txt` at the root level containing a semver version string (e.g., `0.0.1`).
+- Every repository MUST maintain a plain-text file `VERSION.txt` at the root level containing a semver string (e.g., `0.0.1`).
 - Initialized repositories start at `0.0.1`.
 - All build tools, packages, and `Makefile` scripts MUST read `VERSION.txt` as their single source of truth.
 
 ### B. Standardized `Makefile` Targets (Compiled Languages Only)
-Every compiled repository (Go, Rust, C++) MUST provide a root `Makefile` implementing the standard target contracts.
 > [!IMPORTANT]
-> **Python Tooling Purity**: Pure Python repositories DO NOT generate a `Makefile`. They rely natively on `pytest`, `requirements.txt`, and virtual environments.
+> **Python Tooling Purity**: Pure Python repositories **DO NOT** generate a `Makefile`. They rely natively on `pytest`, `requirements.txt`, and virtual environments.
 
 ```makefile
-VERSION := $(shell cat VERSION.txt 2>/dev/null || echo "0.0.1")
+VERSION ?= $(shell cat VERSION.txt 2>/dev/null || echo "0.0.1")
 
-.PHONY: all build test version clean
+.PHONY: all build test race vet version clean
 
 all: build
 
@@ -92,18 +94,28 @@ version:
 
 build:
 	@echo "Building repository (version $(VERSION))..."
-	@if [ -f "go.mod" ]; then go build ./... || true; fi
-	@if [ -f "Cargo.toml" ]; then cargo build --release || true; fi
+	@mkdir -p bin
+	go build -ldflags="-s -w" -o bin/$(NAME) ./cmd/$(NAME)
 
 test:
 	@echo "Running tests (version $(VERSION))..."
-	@if [ -f "go.mod" ]; then go test ./... 2>/dev/null || go test ./src/... 2>/dev/null || true; fi
-	@if [ -f "Cargo.toml" ]; then cargo test 2>/dev/null || true; fi
+	go test -v ./...
+
+race:
+	@echo "Running race detector (version $(VERSION))..."
+	go test -race -v ./...
+
+vet:
+	@echo "Running go vet..."
+	go vet ./...
 
 clean:
 	@echo "Cleaning build artifacts..."
-	@rm -rf dist build *.egg-info target/ bin/
+	@rm -rf bin/ dist/ build/ *.egg-info target/
 ```
+
+> [!CAUTION]
+> **Strict Error-Masking Prohibition**: Never append `|| true` or pipe to `2>/dev/null` on compilation or test targets. Failures must fail fast.
 
 ---
 
@@ -114,7 +126,6 @@ Generated automatically or copied from `05-Fleet-Operation/04-Templates/Microser
 
 ```yaml
 # [FLEET-ARCHITECT] Continuous Integration
-# Sync-ID: 2026-05-11-GLOBAL-001
 name: Fleet CI
 on:
   push:
@@ -128,14 +139,11 @@ jobs:
     secrets: inherit
 ```
 
-> [!TIP]
-> **Automated Scaffolding**: Always use `python3 08-Base-Scripts/main.py scaffold-microservice --name <name> --lang <go|python|rust>` to automatically generate all mandatory files, workflows, and BDD specifications in full compliance.
-
 ---
 
 ## 🛡️ 5. Standardized `.gitignore` Rules
 
-When creating or modifying `.gitignore`, **ONLY ADD MISSING ENTRIES, NEVER REMOVE EXISTING ONES**:
+When creating or modifying `.gitignore`, ensure standard OS and build caches are protected:
 
 ```gitignore
 # --- Standard Ecosystem Protections ---
@@ -145,8 +153,6 @@ When creating or modifying `.gitignore`, **ONLY ADD MISSING ENTRIES, NEVER REMOV
 ._*
 .Spotlight-V100
 .Trashes
-ehthumbs.db
-Thumbs.db
 
 # Logs and runtime caches
 *.log
@@ -159,6 +165,20 @@ venv/
 htmlcov/
 dist/
 build/
-*.egg-info/
+bin/
 target/
+*.egg-info/
 ```
+
+---
+
+## 🚀 6. Automated Generation Command
+
+Always use the automated scaffolding tool to generate compliant microservices:
+
+```bash
+python3 08-Base-Scripts/main.py scaffold-microservice --name <name> --lang <go|python|rust> --port <port> --desc "<description>"
+```
+
+---
+*Reference: [[03-Repository-Structure]], [[11-Microservice-Integration-Standard]], [[12-Docker-Deployment-Standards]]*

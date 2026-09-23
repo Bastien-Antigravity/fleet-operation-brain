@@ -56,13 +56,15 @@ python3 ../08-Base-Scripts/main.py fleet-commander --fleet -m "chore(fleet): [FL
      - **Libraries**: `microservice-toolbox`, `universal-logger`, `flexible-logger`, `distributed-config`, `safe-socket`.
      - **Infrastructure**: `timescale-db` (Port `5432`), `nats-server` (Port `4222`, Monitoring `8222`).
      - **Application Microservices**:
-       - `config-server`: Ports `3306` (TCP), `3307` (gRPC), `3308` (REST) | Protocol: SafeSocket/gRPC/REST
-       - `log-server`: Ports `9020` (TCP), `9021` (gRPC) | Protocol: SafeSocket/gRPC
-       - `notif-server`: Port `8095` (REST) | Protocol: REST/OpenMFE
-       - `tele-remote`: Port `1863` (gRPC) | Protocol: gRPC/Telegram
-       - `watchdog-agent`: Port `8002` (REST) | Protocol: REST/Prometheus
-       - `ontime-scheduler`: Port `8080` (HTTP) | Protocol: HTTP
-       - `web-interface`: Port `5000` (HTTP) | Protocol: HTTP/OpenMFE
+       - *Core Platform Daemons (`is_core: true`)*:
+         - `config-server`: Ports `3306` (TCP), `3307` (gRPC), `3308` (REST) | Protocol: SafeSocket/gRPC/REST
+         - `log-server`: Ports `9020` (TCP), `9021` (gRPC) | Protocol: SafeSocket/gRPC
+         - `notif-server`: Ports `1026` (TCP), `1027` (gRPC), `1029` (REST) | Protocol: SafeSocket/gRPC/REST
+         - `tele-remote`: Port `1863` (gRPC) | Protocol: gRPC/Telegram
+         - `watchdog-agent`: Port `9095` (REST) | Protocol: REST/OpenMFE
+         - `web-interface`: Port `5000` (HTTP) | Protocol: HTTP/OpenMFE
+       - *Domain Microservices (`is_core: false`)*:
+         - `ontime-scheduler` (Port `8080` HTTP), `data-ingestor` (NATS), `enhanced-backtesting` (REST), `orderbook-aggregator` (NATS), `technical-analysis` (NATS), `fundamental-analysis` (REST), `market-observer` (NATS), `mt5-gateway` (gRPC).
 
 3. **Fleet Action Plans (`01-Fleet-Action-Plans/`)**:
    - Multi-repo migrations or cross-cutting updates must be planned using `04-Templates/Template-Fleet-Action-Plan.md`.

@@ -75,8 +75,10 @@
       {
         "name": "notif-server",
         "image": "ghcr.io/bastien-antigravity/notif-server",
-        "default_port": 8095,
-        "protocol": "REST/OpenMFE",
+        "default_port": 1026,
+        "grpc_port": 1027,
+        "rest_port": 1029,
+        "protocol": "SafeSocket/gRPC/REST",
         "archetype": "Microservice",
         "classification": "level1_microservice"
       },
@@ -91,9 +93,21 @@
       {
         "name": "watchdog-agent",
         "image": "ghcr.io/bastien-antigravity/watchdog-agent",
-        "default_port": 8002,
-        "protocol": "REST/Prometheus",
+        "default_port": 9095,
+        "rest_port": 9095,
+        "protocol": "REST/OpenMFE",
         "archetype": "Microservice",
+        "classification": "level1_microservice"
+      },
+      {
+        "name": "rag-engine",
+        "image": "ghcr.io/bastien-antigravity/rag-engine",
+        "default_port": 8090,
+        "grpc_port": 8091,
+        "rest_port": 8093,
+        "dashboard_port": 8082,
+        "protocol": "MCP/gRPC/REST/HTTP",
+        "archetype": "RAG",
         "classification": "level1_microservice"
       },
       {
@@ -164,7 +178,8 @@
         "name": "web-interface",
         "image": "ghcr.io/bastien-antigravity/web",
         "default_port": 5000,
-        "protocol": "HTTP",
+        "grpc_port": 8001,
+        "protocol": "HTTP/gRPC",
         "archetype": "Web",
         "classification": "level1_microservice"
       }

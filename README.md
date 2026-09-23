@@ -31,8 +31,10 @@ Welcome to the **Strategic Command Deck**. This brain is the cockpit for mass-ex
 Repositories in the Bastien-Antigravity ecosystem are versioned at `0.0.1` and split into three Tiers:
 
 1. **Shared Libraries (SDKs, Protocols & Toolboxes)**: `microservice-toolbox`, `universal-logger`, `flexible-logger`, `distributed-config`, `safe-socket`.
-2. **Level 1 Microservices (Independent Daemons & Apps)**: Standalone services like `config-server` (3306/3307/3308), `log-server` (9020/9021), `notif-server` (8095), `tele-remote` (1863), `watchdog-agent` (8002), `ontime-scheduler` (8080), domain engines, and `web-interface` (5000).
-3. **Orchestration & Brains**: `sandbox-testing`, `docker-deployment`, `obsidian-brain`.
+2. **Level 1 Microservices (Independent Daemons & Apps)**:
+   - **Core Platform Daemons (Base 14 Fleet)**: `config-server` (TCP `3306`, gRPC `3307`, REST `3308`), `log-server` (TCP `9020`, gRPC `9021`), `notif-server` (TCP `1026`, gRPC `1027`, REST `1029`), `tele-remote` (gRPC `1863`), `watchdog-agent` (REST `9095`), `web-interface` (HTTP `5000`).
+   - **Domain Microservices (Trading & Analytics)**: Domain engines (`data-ingestor`, `enhanced-backtesting`, `ontime-scheduler`, `orderbook-aggregator`, `technical-analysis`, `fundamental-analysis`, `market-observer`, `mt5-gateway`) developed on top of the base platform.
+3. **Orchestration & Brains**: `docker-deployment`, `sandbox-testing`, `obsidian-brain`.
 
 For details, see [Ecosystem Taxonomy Guide](../03-Tech-Stack/quick-overview/Ecosystem-Taxonomy-Guide.md) and [Ecosystem Onboarding Guide](quick-overview/Ecosystem-Onboarding-Guide.md).
 

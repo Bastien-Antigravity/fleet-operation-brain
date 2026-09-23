@@ -3,8 +3,15 @@ title: Out-of-the-Box Ecosystem Onboarding & Sharing Guide
 version: 0.0.1
 classification: Orchestration
 last_updated: 2026-08-05
+microservice: 05-Fleet-Operation
+type: overview
+status: active
+tags:
+- '#service/05-Fleet-Operation'
+- '#type/overview'
+- '#state/active'
+- '#ai/ignore'
 ---
-
 # 🚀 Out-of-the-Box Ecosystem Onboarding & Sharing Guide
 
 Welcome to the **Bastien-Antigravity Ecosystem**. This guide explains how the platform works, how to run services out-of-the-box using Docker, and how to share the `obsidian-brain` workspace with new developers and AI coding agents.
@@ -34,7 +41,8 @@ The ecosystem is built on a clear 3-Tier taxonomy where all components are stand
    * `microservice-toolbox`, `universal-logger`, `flexible-logger`, `distributed-config`, `safe-socket`.
    * **Rule**: Reusable packages imported into microservices. They do *not* run as standalone daemons.
 2. **Level 1 Microservices (Executable Daemons)**:
-   * Independent containers exposing network ports (e.g. `config-server`: 1862, `log-server`: 9020/9021, `notif-server`: 1026, `tele-remote`: 1863, `ontime-scheduler`: 8080, `web-interface`: 5000).
+   * **Core Platform Daemons**: `config-server` (TCP `3306`, gRPC `3307`, REST `3308`), `log-server` (TCP `9020`, gRPC `9021`), `notif-server` (TCP `1026`, gRPC `1027`, REST `1029`), `tele-remote` (gRPC `1863`), `watchdog-agent` (REST `9095`), `web-interface` (HTTP `5000`).
+   * **Domain Microservices**: External trading/domain engines (`data-ingestor`, `enhanced-backtesting`, `ontime-scheduler`, `orderbook-aggregator`, etc.) that run on top of the base platform.
 3. **Orchestration & Deployment**:
    * `docker-deployment` (master docker compose), `sandbox-testing` (scenario runner), `obsidian-brain` (central agent workspace).
 
@@ -46,28 +54,30 @@ The ecosystem is built on a clear 3-Tier taxonomy where all components are stand
 Ensure you have:
 * **Docker & Docker Compose** (v2.20+)
 * **Go 1.25+** (for local development)
-* Workspace directory structured with sibling repositories:
+* Workspace directory structured with the 14 base sibling repositories:
   ```
   Bastien-Antigravity/
   ├── config-server/
-  ├── log-server/
-  ├── notif-server/
-  ├── tele-remote/
-  ├── watchdog-agent/
-  ├── microservice-toolbox/
-  ├── universal-logger/
   ├── distributed-config/
-  ├── safe-socket/
-  ├── flexible-logger/
   ├── docker-deployment/
-  └── obsidian-brain/
+  ├── flexible-logger/
+  ├── log-server/
+  ├── microservice-toolbox/
+  ├── notif-server/
+  ├── obsidian-brain/
+  ├── safe-socket/
+  ├── sandbox-testing/
+  ├── tele-remote/
+  ├── universal-logger/
+  ├── watchdog-agent/
+  └── web-interface/
   ```
 
 ---
 
 ### Step 2: Option A — Launch Entire Stack (Full Fleet)
 
-To spin up the entire platform (TimescaleDB, NATS, log-server, config-server, notif-server, tele-remote, and scheduler):
+To spin up the entire base platform (TimescaleDB, NATS, log-server, config-server, notif-server, tele-remote, rag-engine, and web-interface):
 
 ```bash
 cd Bastien-Antigravity/docker-deployment
@@ -79,17 +89,20 @@ cp .env.develop .env
 docker compose -f docker-compose.yaml up -d
 ```
 
-#### Service Port Resolution
+#### Docker Host Port Mappings (`docker-compose.yaml`)
 | Service | Host Port | Protocol / Purpose |
 | :--- | :--- | :--- |
-| `config-server` | `1862` | SafeSocket dynamic config server |
-| `log-server` | `9020` / `9021` | SafeSocket / gRPC log aggregator |
-| `notif-server` | `1026` | SafeSocket notification dispatcher |
+| `config-server` | `3306` | SafeSocket TCP dynamic config distribution |
+| `log-server` | `9020` | SafeSocket TCP log stream ingestion |
+| `notif-server` | `1026` / `1027` / `1029` | SafeSocket TCP (`1026`) / gRPC (`1027`) / REST (`1029`) notification dispatcher |
 | `tele-remote` | `1863` | gRPC / Telegram admin daemon |
-| `ontime-scheduler` | `8080` | HTTP job scheduler daemon |
-| `web-interface` | `5000` | Web UI dashboard |
+| `web-interface` | `5000` | Web UI dashboard & OpenMFE host |
 | `timescale-db` | `5432` | PostgreSQL / TimescaleDB |
-| `nats-server` | `4222` / `8222` | NATS message broker & monitor |
+| `nats-server` | `4222` / `8222` | NATS message broker (`4222`) & HTTP monitor (`8222`) |
+| `rag-engine` | `8090` / `8082` / `8091` | MCP SSE (`8090`) / Web Dashboard (`8082`) / gRPC (`8091`) |
+
+> [!NOTE] Native vs Docker Host Ports
+> In native local mode, `config-server` also listens on gRPC `3307` and REST `3308`, and `log-server` listens on gRPC `9021`. In Docker Compose, only primary ports needed for external/host access are exposed to the host (`3306` for config, `9020` for log) to prevent host port clutter, while inter-container traffic uses the internal container bridge network.
 
 ---
 
@@ -129,15 +142,13 @@ To share this workspace out-of-the-box with a new contributor or AI coding agent
    git clone --recursive https://github.com/Bastien-Antigravity/obsidian-brain.git
    ```
 2. **AI Agent Context Files**:
-   * AI agents automatically read `AI-Init.md` and `AI-Project-DNA.md` in each repository.
-   * Metadata headers explicitly communicate repo classification and version:
-     ```markdown
-     # Metadata
-     - Version: 0.0.1
-     - Classification: Level 1 Microservice
-     ```
+   * **`AGENTS.md`**: Primary technical rules and build specifications automatically ingested into the AI agent's system instructions (capabilities, canonical ports, build/test commands, and strict coding rules).
+   * **`AI-Init.md`**: Interactive session bootstrap prompt for human developers and agents to kick off squad workflows, run preflight audits, and restore session context.
+   * **`AI-Project-DNA.md`**: High-level domain intent, BDD specs, and classification metadata (`# Metadata: Version, Classification`).
+   * **`AI-Session-State.md`**: Active session working memory and task progression tracker across context compactions.
+   * See [03-Repository-Structure.md](../../03-Tech-Stack/02-Project-Architecture/03-Repository-Structure.md) for full structural specifications.
 3. **Fleet Manager Utility**:
-   * Manage the workspace using [fleet-manager.py](file:///Users/imac/Desktop/Bastien-Antigravity/obsidian-brain/05-Fleet-Operation/00-Repo-Control/fleet-manager.py):
+   * Manage the workspace using [fleet-manager.py](../00-Repo-Control/fleet-manager.py):
      ```bash
      # Check status of all repos
      python3 obsidian-brain/05-Fleet-Operation/00-Repo-Control/fleet-manager.py status

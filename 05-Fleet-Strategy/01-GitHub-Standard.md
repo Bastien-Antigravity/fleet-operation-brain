@@ -28,15 +28,16 @@ Every repository in the Bastien-Antigravity fleet MUST follow this branching str
 2.  **`develop` (Active)**:
     *   The primary integration branch.
     *   All features and fixes are merged here first.
+3.  **`feature/*` or `fix/*`**:
+    *   Short-lived branches for specific tasks.
+    *   Must be deleted after merging.
 
 ## 🛡️ GitHub Branch Protection
 Every repository MUST have "Branch Protection" enabled on GitHub for `main` and `develop`:
 - **No Force Push**: Prevent overwriting history.
 - **No Deletion**: Prevent accidental branch removal.
 - **Review Required**: Minimum 1 approving review (can be AI-Architect) before merging to `main`.
-3.  **`feature/*` or `fix/*`**:
-    *   Short-lived branches for specific tasks.
-    *   Must be deleted after merging.
+- **Automated Verification**: Branch protection settings are validated automatically via `gh api` queries across all repositories during fleet audits to detect and remediate configuration drift.
 
 ## 🛡️ Repository Governance
 - **Remote Naming**: The primary GitHub remote MUST be named `origin`.
@@ -48,6 +49,7 @@ To avoid the "Go Module Trap", repositories using Go MUST follow these rules whe
 - **Module Path**: The `go.mod` file MUST append `/vN` to the module path (e.g., `module github.com/Bastien-Antigravity/safe-socket/v2`).
 - **Imports**: All internal and external imports for that repository MUST be updated to reflect the `/vN` path.
 - **Sync**: The Fleet Commander MUST verify `go.mod` consistency before creating a Major tag.
+- **Automated Validation**: CI and preflight checks automatically assert that `go.mod` module path matches the major semantic version (`/vN`) before releasing major version tags.
 
 ## 📜 The Law of Commitment
 To maintain a clean and traceable history, the following rules apply:
@@ -55,6 +57,7 @@ To maintain a clean and traceable history, the following rules apply:
 2.  **No Magic Syncs**: The Fleet Manager will REFUSE to sync any repository with uncommitted changes. This prevents generic or "messy" commit messages from entering the history.
 3.  **Sync = Delivery**: Synchronization is strictly for pulling remote updates and delivering verified local commits to GitHub.
 4.  **Pre-Task Git Checkpoint**: To enable safe rollbacks in case of code generation issues, the AI Squad MUST ensure that the current working directory is clean or has a safety commit (checkpoint) before writing new code. Under Mode 1, this check is blocking; under Mode 2, it is a recommendation; under Mode 4, the agent must warn the user.
+5.  **Work-Tree Cleanliness Guard**: A `pre-push` git hook (`git diff --quiet && git diff --cached --quiet`) aborts push attempts if uncommitted or unstaged changes exist in the working directory.
 
 ## 🤝 PR & Review Protocol
 - **AI-Validation**: No PR should be merged to `develop` without passing the **Sandbox Integration** tests.

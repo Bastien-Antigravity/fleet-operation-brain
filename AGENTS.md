@@ -1,4 +1,13 @@
-# AGENTS.md: 05-Fleet-Operation
+---
+microservice: 08-Base-Scripts
+type: note
+status: active
+tags:
+- '#service/08-Base-Scripts'
+- '#type/note'
+- '#state/active'
+- '#zone/3-fleet'
+---# AGENTS.md: 05-Fleet-Operation
 
 ## Service Mission & Architecture Role
 `05-Fleet-Operation` is the central command deck, fleet orchestration center, and configuration source-of-truth for repository governance and CI/CD standardization in the Bastien-Antigravity ecosystem. It maintains the definitive repository inventory (`inventory.json`), the fleet service capability registry (`service-registry.json`), fleet-wide Git management automation (`fleet-manager.py`), multi-repository migration plans (`01-Fleet-Action-Plans`), deployment audit logs (`02-Deployment-Logs`), and central CI/CD workflow templates (`04-Templates`).

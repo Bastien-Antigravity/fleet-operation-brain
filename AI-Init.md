@@ -2,6 +2,11 @@
 microservice: 05-Fleet-Operation
 type: governance
 status: active
+tags:
+- '#service/05-Fleet-Operation'
+- '#type/governance'
+- '#state/active'
+- '#zone/3-fleet'
 ---
 
 # ⚡ AI Initialization: 05-Fleet-Operation

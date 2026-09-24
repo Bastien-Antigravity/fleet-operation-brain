@@ -79,7 +79,7 @@
       "path": "./obsidian-brain/09-RAG-Engine",
       "remote": "https://github.com/Bastien-Antigravity/obsidian-rag-mcp.git",
       "master_branch": "develop",
-      "repo_type": "level1-microservice",
+      "repo_type": "level2-microservice",
       "is_core": false,
       "modes": [
         "local",
@@ -91,7 +91,7 @@
       "path": "./obsidian-brain/10-Agent-Factory",
       "remote": "https://github.com/Bastien-Antigravity/oop-agent-factory.git",
       "master_branch": "develop",
-      "repo_type": "level1-microservice",
+      "repo_type": "level2-microservice",
       "is_core": false,
       "modes": [
         "local",
@@ -109,30 +109,6 @@
         "local",
         "docker",
         "production"
-      ]
-    },
-    {
-      "name": "data-ingestor",
-      "path": "./data-ingestor",
-      "remote": "https://github.com/Bastien-Antigravity/data-ingestor.git",
-      "master_branch": "develop",
-      "repo_type": "level1-microservice",
-      "is_core": false,
-      "modes": [
-        "local",
-        "docker"
-      ]
-    },
-    {
-      "name": "demo-surface-vol",
-      "path": "./demo-surface-vol",
-      "remote": "https://github.com/Bastien-Antigravity/demo-surface-vol.git",
-      "master_branch": "develop",
-      "repo_type": "level1-microservice",
-      "is_core": false,
-      "modes": [
-        "local",
-        "docker"
       ]
     },
     {
@@ -160,18 +136,6 @@
       ]
     },
     {
-      "name": "enhanced-backtesting",
-      "path": "./enhanced-backtesting",
-      "remote": "https://github.com/Bastien-Antigravity/enhanced-backtesting.git",
-      "master_branch": "develop",
-      "repo_type": "level1-microservice",
-      "is_core": false,
-      "modes": [
-        "local",
-        "docker"
-      ]
-    },
-    {
       "name": "flexible-logger",
       "path": "./flexible-logger",
       "remote": "https://github.com/Bastien-Antigravity/flexible-logger.git",
@@ -180,18 +144,6 @@
       "is_core": false,
       "modes": [
         "local"
-      ]
-    },
-    {
-      "name": "fundamental-analysis",
-      "path": "./fundamental-analysis",
-      "remote": "https://github.com/Bastien-Antigravity/fundamental-analysis.git",
-      "master_branch": "develop",
-      "repo_type": "level1-microservice",
-      "is_core": false,
-      "modes": [
-        "local",
-        "docker"
       ]
     },
     {
@@ -208,18 +160,6 @@
       ]
     },
     {
-      "name": "market-observer",
-      "path": "./market-observer",
-      "remote": "https://github.com/Bastien-Antigravity/market-observer.git",
-      "master_branch": "develop",
-      "repo_type": "level1-microservice",
-      "is_core": false,
-      "modes": [
-        "local",
-        "docker"
-      ]
-    },
-    {
       "name": "microservice-toolbox",
       "path": "./microservice-toolbox",
       "remote": "https://github.com/Bastien-Antigravity/microservice-toolbox.git",
@@ -228,18 +168,6 @@
       "is_core": true,
       "modes": [
         "local"
-      ]
-    },
-    {
-      "name": "mt5-gateway",
-      "path": "./mt5-gateway",
-      "remote": "https://github.com/Bastien-Antigravity/mt5-gateway.git",
-      "master_branch": "develop",
-      "repo_type": "level1-microservice",
-      "is_core": false,
-      "modes": [
-        "local",
-        "docker"
       ]
     },
     {
@@ -270,30 +198,6 @@
       ]
     },
     {
-      "name": "ontime-scheduler",
-      "path": "./ontime-scheduler",
-      "remote": "https://github.com/Bastien-Antigravity/ontime-scheduler.git",
-      "master_branch": "develop",
-      "repo_type": "level1-microservice",
-      "is_core": false,
-      "modes": [
-        "local",
-        "docker"
-      ]
-    },
-    {
-      "name": "orderbook-aggregator",
-      "path": "./orderbook-aggregator",
-      "remote": "https://github.com/Bastien-Antigravity/orderbook-aggregator.git",
-      "master_branch": "develop",
-      "repo_type": "level1-microservice",
-      "is_core": false,
-      "modes": [
-        "local",
-        "docker"
-      ]
-    },
-    {
       "name": "safe-socket",
       "path": "./safe-socket",
       "remote": "https://github.com/Bastien-Antigravity/safe-socket.git",
@@ -313,18 +217,6 @@
       "is_core": false,
       "modes": [
         "local"
-      ]
-    },
-    {
-      "name": "technical-analysis",
-      "path": "./technical-analysis",
-      "remote": "https://github.com/Bastien-Antigravity/technical-analysis.git",
-      "master_branch": "develop",
-      "repo_type": "level1-microservice",
-      "is_core": false,
-      "modes": [
-        "local",
-        "docker"
       ]
     },
     {
@@ -356,7 +248,7 @@
       "path": "./watchdog-agent",
       "remote": "https://github.com/Bastien-Antigravity/watchdog-agent.git",
       "master_branch": "develop",
-      "repo_type": "level1-microservice",
+      "repo_type": "level2-microservice",
       "is_core": true,
       "modes": [
         "local"

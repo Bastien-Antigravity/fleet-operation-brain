@@ -112,11 +112,20 @@
       },
       {
         "name": "web-interface",
-        "image": "ghcr.io/bastien-antigravity/web",
+        "image": "ghcr.io/bastien-antigravity/web-interface",
         "default_port": 5000,
         "grpc_port": 8001,
         "protocol": "HTTP/gRPC",
         "archetype": "Web",
+        "classification": "level1_microservice"
+      },
+      {
+        "name": "base-scripts",
+        "image": "ghcr.io/bastien-antigravity/squad-agent-brain",
+        "default_port": 8085,
+        "grpc_port": 8087,
+        "protocol": "REST/gRPC/OpenMFE",
+        "archetype": "SquadControl",
         "classification": "level1_microservice"
       }
     ]

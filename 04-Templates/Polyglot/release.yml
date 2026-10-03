@@ -28,6 +28,25 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Resolve Sibling Dependencies
+        shell: bash
+        run: |
+          if [ -f "go.mod" ]; then
+            grep -E '=> \.\./' go.mod | while read -r line; do
+              target=$(echo "$line" | awk '{print $NF}')
+              mod=$(echo "$line" | awk '{print $1}')
+              repo_dir=$(basename "$target")
+              if [ ! -d "$target" ]; then
+                echo "Cloning missing sibling dependency: $repo_dir into $target..."
+                git clone --depth 1 "https://github.com/Bastien-Antigravity/$repo_dir.git" "$target" 2>/dev/null || true
+              fi
+              if [ ! -d "$target" ]; then
+                echo "Target $target still missing, dropping replace directive for $mod"
+                go mod edit -dropreplace "$mod" || true
+              fi
+            done
+          fi
+
       - name: Build Shared Libraries
         shell: bash
         run: |

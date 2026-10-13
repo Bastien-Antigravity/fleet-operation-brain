@@ -49,5 +49,5 @@ Every CI/CD pipeline in the Bastien-Antigravity fleet MUST adhere to these struc
 - **Fleet Commander Lock**: If `fleet-manager audit` or `validate-compliance` reports a failure, the Fleet Commander MUST prioritize fixing that repository before performing any fleet-wide migrations.
 
 ## 🔗 Documentation-to-Code Alignment
-- **Traceability Markers**: Architecture documents embed alignment comments (`<!-- register_documentation_link -->`) establishing explicit links between rules and the enforcement scripts residing in `08-Base-Scripts/` and `05-Fleet-Operation/`.
-- **Automated Fleet Audits**: Preflight checks (`python3 08-Base-Scripts/main.py preflight-check` and `validate-compliance`) audit frontmatter health (≥ 99% valid), tag conformance, and workflow consistency across the entire fleet.
+- **Traceability Markers**: Architecture documents embed alignment comments (`<!-- register_documentation_link -->`) establishing explicit links between rules and the enforcement scripts residing in `08-Squad-Agent/` and `05-Fleet-Operation/`.
+- **Automated Fleet Audits**: Preflight checks (`python3 08-Squad-Agent/main.py preflight-check` and `validate-compliance`) audit frontmatter health (≥ 99% valid), tag conformance, and workflow consistency across the entire fleet.

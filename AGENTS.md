@@ -1,13 +1,14 @@
 ---
-microservice: 08-Base-Scripts
+microservice: 05-Fleet-Operation
 type: note
 status: active
 tags:
-- '#service/08-Base-Scripts'
+- '#service/05-Fleet-Operation'
 - '#type/note'
 - '#state/active'
 - '#zone/3-fleet'
----# AGENTS.md: 05-Fleet-Operation
+---
+# AGENTS.md: 05-Fleet-Operation
 
 ## Service Mission & Architecture Role
 `05-Fleet-Operation` is the central command deck, fleet orchestration center, and configuration source-of-truth for repository governance and CI/CD standardization in the Bastien-Antigravity ecosystem. It maintains the definitive repository inventory (`inventory.json`), the fleet service capability registry (`service-registry.json`), fleet-wide Git management automation (`fleet-manager.py`), multi-repository migration plans (`01-Fleet-Action-Plans`), deployment audit logs (`02-Deployment-Logs`), and central CI/CD workflow templates (`04-Templates`).
@@ -45,8 +46,8 @@ python3 00-Repo-Control/fleet-manager.py discover
 # Rebuild inventory.json from workspace scanning
 python3 00-Repo-Control/build-inventory.py
 
-# Push changes with automated compliance enforcement (via 08-Base-Scripts router)
-python3 ../08-Base-Scripts/main.py fleet-commander --fleet -m "chore(fleet): [FLEET-COMMANDER] update" --dry-run
+# Push changes with automated compliance enforcement (via 08-Squad-Agent router)
+python3 ../08-Squad-Agent/main.py fleet-commander --fleet -m "chore(fleet): [FLEET-COMMANDER] update" --dry-run
 ```
 
 ---
@@ -108,7 +109,7 @@ Whenever a new microservice or capability is created, AI agents must complete al
 
 ## AI Squad Development Guidelines
 
-1. **No Uncoordinated Direct Git Commands**: AI agents must never run raw `git push --all` or uncoordinated fleet commits. Use `fleet-manager.py` or `08-Base-Scripts/main.py fleet-commander`.
+1. **No Uncoordinated Direct Git Commands**: AI agents must never run raw `git push --all` or uncoordinated fleet commits. Use `fleet-manager.py` or `08-Squad-Agent/main.py fleet-commander`.
 2. **Pre-Task Checkpoints**: Always check git status across target repositories before modifying files (`fleet-manager.py status -r <repo>`).
 3. **Atomic Operations & Rollback**: If a fleet migration fails in any repository, halt immediately, restore the clean state, and log the incident in `02-Deployment-Logs/`.
 4. **Canonical Port Integrity**: When configuring ports, strictly reference `service-registry.json` and `03-Tech-Stack/02-Project-Architecture/08-Networking-Protocols.md`. Never use hardcoded legacy ports (e.g. `1862`, `1026`, `8000`, `8080`).

@@ -120,7 +120,7 @@
         "classification": "level1_microservice"
       },
       {
-        "name": "base-scripts",
+        "name": "squad-agent",
         "image": "ghcr.io/bastien-antigravity/squad-agent-brain",
         "default_port": 8085,
         "grpc_port": 8087,

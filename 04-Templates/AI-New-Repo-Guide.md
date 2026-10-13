@@ -6,8 +6,8 @@ tags:
 - '#type/guide'
 - '#tech/git'
 - '#state/active'
-- '#service/08-Base-Scripts'
-microservice: 08-Base-Scripts
+- '#service/05-Fleet-Operation'
+microservice: 05-Fleet-Operation
 status: active
 ---
 
@@ -177,7 +177,7 @@ target/
 Always use the automated scaffolding tool to generate compliant microservices:
 
 ```bash
-python3 08-Base-Scripts/main.py scaffold-microservice --name <name> --lang <go|python|rust> --port <port> --desc "<description>"
+python3 08-Squad-Agent/main.py scaffold-microservice --name <name> --lang <go|python|rust> --port <port> --desc "<description>"
 ```
 
 ---

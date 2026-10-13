@@ -38,19 +38,19 @@ Repositories in the Bastien-Antigravity ecosystem are versioned at `0.0.1` and s
 
 For details, see [Ecosystem Taxonomy Guide](../03-Tech-Stack/quick-overview/Ecosystem-Taxonomy-Guide.md) and [Ecosystem Onboarding Guide](quick-overview/Ecosystem-Onboarding-Guide.md).
 
-## 🛠️ Fleet Commander Quick Reference (Engine Room: `08-Base-Scripts`)
+## 🛠️ Fleet Commander Quick Reference (Engine Room: `08-Squad-Agent`)
 
-All operational automation is unified under `08-Base-Scripts/main.py`:
+All operational automation is unified under `08-Squad-Agent/main.py`:
 
 | Command | Action Description | Canonical Usage |
 | :--- | :--- | :--- |
-| `status` | Audit git branch and dirty/clean status across the fleet | `python3 08-Base-Scripts/main.py fleet-commander status` |
-| `sync` | Perform atomic pull, submodule update, and push across fleet | `python3 08-Base-Scripts/main.py fleet-commander sync` |
-| `vault-sync` | Perform atomic sync of obsidian-brain submodules and parent pointer | `python3 08-Base-Scripts/main.py fleet-commander vault-sync` |
-| `push` | Compliance audit (docs, isolation zone, workflows) + mass commit & push | `python3 08-Base-Scripts/main.py fleet-commander push -m "chore: update"` |
-| `build-inventory`| Scan workspace and update `inventory.json` safely | `python3 08-Base-Scripts/main.py build-inventory` |
-| `fleet-refresh`| Safe non-destructive clone and synchronization (anti-data-loss guarded) | `python3 08-Base-Scripts/main.py fleet-refresh` |
-| `--repo / -r` | Target a specific repository or active workspaces | `python3 08-Base-Scripts/main.py fleet-commander status -r log-server` |
+| `status` | Audit git branch and dirty/clean status across the fleet | `python3 08-Squad-Agent/main.py fleet-commander status` |
+| `sync` | Perform atomic pull, submodule update, and push across fleet | `python3 08-Squad-Agent/main.py fleet-commander sync` |
+| `vault-sync` | Perform atomic sync of obsidian-brain submodules and parent pointer | `python3 08-Squad-Agent/main.py fleet-commander vault-sync` |
+| `push` | Compliance audit (docs, isolation zone, workflows) + mass commit & push | `python3 08-Squad-Agent/main.py fleet-commander push -m "chore: update"` |
+| `build-inventory`| Scan workspace and update `inventory.json` safely | `python3 08-Squad-Agent/main.py build-inventory` |
+| `fleet-refresh`| Safe non-destructive clone and synchronization (anti-data-loss guarded) | `python3 08-Squad-Agent/main.py fleet-refresh` |
+| `--repo / -r` | Target a specific repository or active workspaces | `python3 08-Squad-Agent/main.py fleet-commander status -r log-server` |
 
 ---
 > [!IMPORTANT]

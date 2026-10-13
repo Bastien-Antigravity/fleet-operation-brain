@@ -6,9 +6,9 @@ tags:
 - '#type/architecture'
 - '#tech/ci-cd'
 - '#state/active'
-- '#service/08-Base-Scripts'
+- '#service/05-Fleet-Operation'
 - '#type/architecture-strategy'
-microservice: 08-Base-Scripts
+microservice: 05-Fleet-Operation
 status: active
 ---
 
@@ -74,4 +74,4 @@ graph TD
 To ensure zero-drift over long-term operations:
 - **Dependency Caching**: `setup-go`, `setup-python`, and `setup-node` utilize native GitHub Actions caching (`cache: true` / `cache: 'npm'`).
 - **Graceful Fallbacks**: Test steps use multi-path fallbacks to handle single or multi-module directory structures cleanly.
-- **Auditing Automation**: `08-Base-Scripts` (`fleet_commander.py`) audits workflow compliance prior to every push.
+- **Auditing Automation**: `08-Squad-Agent` (`fleet_commander.py`) audits workflow compliance prior to every push.

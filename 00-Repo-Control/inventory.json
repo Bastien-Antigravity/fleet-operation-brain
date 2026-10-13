@@ -75,8 +75,8 @@
       ]
     },
     {
-      "name": "08-Base-Scripts",
-      "path": "./obsidian-brain/08-Base-Scripts",
+      "name": "08-Squad-Agent",
+      "path": "./obsidian-brain/08-Squad-Agent",
       "remote": "https://github.com/Bastien-Antigravity/squad-agent-brain.git",
       "master_branch": "develop",
       "repo_type": "level2-microservice",

@@ -26,12 +26,12 @@ This directory serves as the **Authoritative Data Registry & Single Source of Tr
 
 ## ⚙️ Operational Code Architecture
 
-All active execution logic and Python automation scripts reside natively in the **Engine Room** (`08-Base-Scripts`):
+All active execution logic and Python automation scripts reside natively in the **Engine Room** (`08-Squad-Agent`):
 
-- **Inventory Discovery**: `python3 08-Base-Scripts/main.py build-inventory`
-- **Fleet Commander (Status/Sync/Push)**: `python3 08-Base-Scripts/main.py fleet-commander <status|sync|vault-sync|push>`
-- **Safe Fleet Refresh**: `python3 08-Base-Scripts/main.py fleet-refresh`
-- **Microservice Scaffolder**: `python3 08-Base-Scripts/main.py scaffold-microservice`
+- **Inventory Discovery**: `python3 08-Squad-Agent/main.py build-inventory`
+- **Fleet Commander (Status/Sync/Push)**: `python3 08-Squad-Agent/main.py fleet-commander <status|sync|vault-sync|push>`
+- **Safe Fleet Refresh**: `python3 08-Squad-Agent/main.py fleet-refresh`
+- **Microservice Scaffolder**: `python3 08-Squad-Agent/main.py scaffold-microservice`
 
 > [!NOTE]
-> The scripts in this directory (`build-inventory.py`, `fleet-manager.py`, `fleet-refresh.py`) are lightweight backward-compatibility forwarders that delegate directly to `08-Base-Scripts/main.py`.
+> The scripts in this directory (`build-inventory.py`, `fleet-manager.py`, `fleet-refresh.py`) are lightweight backward-compatibility forwarders that delegate directly to `08-Squad-Agent/main.py`.

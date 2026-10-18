@@ -76,7 +76,7 @@ Every repository created by AI agents MUST fulfill the 12 mandatory root element
 ### A. Single Source of Truth (`VERSION.txt`)
 - Every repository MUST maintain a plain-text file `VERSION.txt` at the root level containing a semver string (e.g., `0.0.1`).
 - Initialized repositories start at `0.0.1`.
-- All build tools, packages, and `Makefile` scripts MUST read `VERSION.txt` as their single source of truth.
+- All build tools, packages, and `Makefile` scripts MUST read `VERSION.txt` as their single source of truth. Hardcoding version numbers in source code or telemetry endpoints is strictly prohibited (`HARDCODED_VERSION_VIOLATION`).
 
 ### B. Standardized `Makefile` Targets (Compiled Languages Only)
 > [!IMPORTANT]
@@ -84,8 +84,9 @@ Every repository created by AI agents MUST fulfill the 12 mandatory root element
 
 ```makefile
 VERSION ?= $(shell cat VERSION.txt 2>/dev/null || echo "0.0.1")
+LDFLAGS := -s -w -X 'github.com/Bastien-Antigravity/microservice-toolbox/go/pkg/version.BuildVersion=$(VERSION)'
 
-.PHONY: all build test race vet version clean
+.PHONY: all build test race vet version clean run
 
 all: build
 
@@ -95,7 +96,7 @@ version:
 build:
 	@echo "Building repository (version $(VERSION))..."
 	@mkdir -p bin
-	go build -ldflags="-s -w" -o bin/$(NAME) ./cmd/$(NAME)
+	go build -ldflags="$(LDFLAGS)" -o bin/$(NAME) ./cmd/$(NAME)
 
 test:
 	@echo "Running tests (version $(VERSION))..."
@@ -113,6 +114,19 @@ clean:
 	@echo "Cleaning build artifacts..."
 	@rm -rf bin/ dist/ build/ *.egg-info target/
 ```
+
+### C. Language-Specific Dynamic Versioning Implementation
+1. **Go Services**:
+   - Access version dynamically via `appConfig.GetVersion()` or `toolbox_version.Get()`.
+   - Optionally inject build semver via `-ldflags="$(LDFLAGS)"` targeting `microservice-toolbox/go/pkg/version.BuildVersion`.
+   - Status telemetry endpoints (`GetStatus`) and startup logs report `appConfig.GetVersion()`.
+2. **Rust Services**:
+   - Access version at runtime via `config.get_version()` or `microservice_toolbox::version::get_version()`.
+   - Provide `build.rs` to set `cargo:rustc-env=APP_VERSION=<version>` and `cargo:rerun-if-changed=VERSION.txt`.
+   - Declare `build = "build.rs"` in `Cargo.toml`.
+3. **Python Services**:
+   - Access version via `self.config.get_version()` or `from microservice_toolbox.version import get_version`.
+   - Consume `self.config.get_version()` in status responses and telemetry endpoints.
 
 > [!CAUTION]
 > **Strict Error-Masking Prohibition**: Never append `|| true` or pipe to `2>/dev/null` on compilation or test targets. Failures must fail fast.

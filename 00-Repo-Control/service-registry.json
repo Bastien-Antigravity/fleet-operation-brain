@@ -6,9 +6,9 @@
     "libraries": [
       {
         "name": "microservice-toolbox",
-        "description": "Cross-language utilities, config, networking, and lifecycle bootstrap SDK",
+        "description": "Cross-language utilities, config, networking, contracts, and lifecycle bootstrap SDK",
         "classification": "library",
-        "languages": ["go", "python", "rust"]
+        "languages": ["go", "python", "rust", "cpp", "vba"]
       },
       {
         "name": "universal-logger",

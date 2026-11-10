@@ -32,7 +32,7 @@ All repositories in the `Bastien-Antigravity` GitHub organization MUST follow st
 | **Gateways & Adaptors**| `<domain>-gateway` | `mt5-gateway` | Edge protocol adapters and hardware bridges |
 | **User Interfaces** | `<domain>-interface` | `web-interface` | Web frontend / dashboard applications |
 | **Domain Processing** | `<domain>-<worker>` | `market-observer`, `fundamental-analysis` | Event-driven processing engines |
-| **Shared Libraries** | `<feature>-<type>` | `microservice-toolbox`, `universal-logger`, `distributed-config`, `safe-socket` | Cross-service libraries (Go/Python/Rust) |
+| **Shared Libraries** | `<feature>-<type>` | `microservice-toolbox`, `universal-logger`, `distributed-config`, `safe-socket` | Cross-service libraries (Go/Python/Rust/C/C++) |
 | **Testing / Verification**| `<domain>-testing` | `sandbox-testing` | E2E integration test scenarios |
 | **Knowledge Vaults** | `<number>-<Name>` | `obsidian-brain` | Governance, architecture, and documentation vaults |
 
@@ -127,6 +127,13 @@ clean:
 3. **Python Services**:
    - Access version via `self.config.get_version()` or `from microservice_toolbox.version import get_version`.
    - Consume `self.config.get_version()` in status responses and telemetry endpoints.
+4. **C/C++ Services**:
+   - Access version dynamically via `appConfig->GetVersion()` or `microservice_toolbox::version::GetVersion()`.
+   - Inject `-DAPP_VERSION=\"$(VERSION)\"` from `VERSION.txt` in `Makefile`.
+
+### D. OpenMFE & Authoritative Exchange Contracts
+- HTTP services expose `GET /api/v1/contracts` (`ContractsEnvelope`) and an embedded `mfe.js` using `BastienMFEElement` + `window.BastienMFEContracts` inside `.openmfe-tabs-bar`.
+- All compiled/interpreted services register declarative `ServiceSpec` + `Contracts` (`ExchangeContract[]`) at startup via `microservice-toolbox` (`spec.PublishWithLifecycle`, `publish_with_lifecycle`, `SpecPublisher::PublishWithLifecycle`, or `contracts.h` in pure C11).
 
 > [!CAUTION]
 > **Strict Error-Masking Prohibition**: Never append `|| true` or pipe to `2>/dev/null` on compilation or test targets. Failures must fail fast.
@@ -191,7 +198,7 @@ target/
 Always use the automated scaffolding tool to generate compliant microservices:
 
 ```bash
-python3 08-Squad-Agent/main.py scaffold-microservice --name <name> --lang <go|python|rust> --port <port> --desc "<description>"
+python3 08-Squad-Agent/main.py scaffold-microservice --name <name> --lang <go|python|rust|cpp> --port <port> --desc "<description>"
 ```
 
 ---

@@ -83,7 +83,7 @@ Every repository created by AI agents MUST fulfill the 12 mandatory root element
 > **Python Tooling Purity**: Pure Python repositories **DO NOT** generate a `Makefile`. They rely natively on `pytest`, `requirements.txt`, and virtual environments.
 
 ```makefile
-VERSION ?= $(shell cat VERSION.txt 2>/dev/null || echo "0.0.1")
+VERSION ?= $(shell cat VERSION.txt)
 LDFLAGS := -s -w -X 'github.com/Bastien-Antigravity/microservice-toolbox/go/pkg/version.BuildVersion=$(VERSION)'
 
 .PHONY: all build test race vet version clean run
@@ -115,25 +115,18 @@ clean:
 	@rm -rf bin/ dist/ build/ *.egg-info target/
 ```
 
-### C. Language-Specific Dynamic Versioning Implementation
-1. **Go Services**:
-   - Access version dynamically via `appConfig.GetVersion()` or `toolbox_version.Get()`.
-   - Optionally inject build semver via `-ldflags="$(LDFLAGS)"` targeting `microservice-toolbox/go/pkg/version.BuildVersion`.
-   - Status telemetry endpoints (`GetStatus`) and startup logs report `appConfig.GetVersion()`.
-2. **Rust Services**:
-   - Access version at runtime via `config.get_version()` or `microservice_toolbox::version::get_version()`.
-   - Provide `build.rs` to set `cargo:rustc-env=APP_VERSION=<version>` and `cargo:rerun-if-changed=VERSION.txt`.
-   - Declare `build = "build.rs"` in `Cargo.toml`.
-3. **Python Services**:
-   - Access version via `self.config.get_version()` or `from microservice_toolbox.version import get_version`.
-   - Consume `self.config.get_version()` in status responses and telemetry endpoints.
-4. **C/C++ Services**:
-   - Access version dynamically via `appConfig->GetVersion()` or `microservice_toolbox::version::GetVersion()`.
-   - Inject `-DAPP_VERSION=\"$(VERSION)\"` from `VERSION.txt` in `Makefile`.
+### C. Language-Specific Dynamic Versioning (`appConfig.GetVersion()` / `get_version()`)
+Microservices ALWAYS read their version through the dedicated method on their bootstrapped `AppConfig` instance (`VERSION.txt` ONLY; zero `"0.0.1"` fallbacks, zero runtime `APP_VERSION`/`SERVICE_VERSION` overrides, zero bespoke scanning loops):
+1. **Go Services**: `appConfig.GetVersion()` (backed internally by `go/pkg/version` + optional `-ldflags="$(LDFLAGS)"` from `VERSION.txt`).
+2. **Rust Services**: `app_config.get_version()` (backed internally by `rust/src/version`; if adding a `build.rs` for standalone binaries, fail fast via `.expect(...)` with zero `CARGO_PKG_VERSION` fallback).
+3. **Python Services**: `self.config.get_version()` / `app_config.get_version()`.
+4. **C++17 Services**: `appConfig->GetVersion()` (optionally compiled with `-DAPP_VERSION=\"$(VERSION)\"` directly from `VERSION.txt`).
+5. **VBA Modules**: `appConfig.GetVersion()` (or `appConfig.Version`).
 
-### D. OpenMFE & Authoritative Exchange Contracts
-- HTTP services expose `GET /api/v1/contracts` (`ContractsEnvelope`) and an embedded `mfe.js` using `BastienMFEElement` + `window.BastienMFEContracts` inside `.openmfe-tabs-bar`.
-- All compiled/interpreted services register declarative `ServiceSpec` + `Contracts` (`ExchangeContract[]`) at startup via `microservice-toolbox` (`spec.PublishWithLifecycle`, `publish_with_lifecycle`, `SpecPublisher::PublishWithLifecycle`, or `contracts.h` in pure C11).
+### D. Standard `microservice-toolbox` Tools (`spec`, `contracts`, `wiretap`, `notification`)
+- Register declarative `ServiceSpec` + `Contracts` (`ExchangeContract[]`) at startup via `spec.PublishWithLifecycle` / `publish_with_lifecycle` / `SpecPublisher::PublishWithLifecycle` (`BuildSpecFromConfig` automatically fills `version` via `appConfig.GetVersion()`, `URL`, `%s` `Framing` ports, `ports`, `node`, `NavRoute`, `Canvas`, `Health`).
+- Build `ContractsEnvelope` using built-in toolbox extractors (`contracts.go`, `contracts.py`, `rust::contracts`, `contracts.hpp`, pure C11 `contracts.h`) and expose `GET /api/v1/contracts` + embedded `mfe.js` (`BastienMFEElement` + `window.BastienMFEContracts` inside `.openmfe-tabs-bar`).
+- Use `wiretap` (auto-wired at boot in Go/Python; `ConfigureFromConfig` in C++/Rust), `notification` (`NotificationClient`), `connectivity.Resolver`, and `LifecycleManager` rather than writing custom plumbing.
 
 > [!CAUTION]
 > **Strict Error-Masking Prohibition**: Never append `|| true` or pipe to `2>/dev/null` on compilation or test targets. Failures must fail fast.

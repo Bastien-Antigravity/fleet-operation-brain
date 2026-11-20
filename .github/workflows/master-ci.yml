@@ -32,37 +32,37 @@ jobs:
         id: set-matrix
         run: |
           langs="["
-          
+
           # Go detection
           if [ -n "$(find . -maxdepth 3 -name 'go.mod' 2>/dev/null)" ]; then
             langs="${langs}\"go\","
           fi
-          
+
           # Python detection
-          if [ -n "$(find . -maxdepth 3 -name 'requirements.txt' -o -name 'pyproject.toml' -o -name 'setup.py' 2>/dev/null)" ]; then
+          if [ -n "$(find . -maxdepth 3 \( -name 'requirements.txt' -o -name 'pyproject.toml' -o -name 'setup.py' \) 2>/dev/null)" ] || [ -d "scripts/tests" ]; then
             langs="${langs}\"python\","
           fi
-          
+
           # Rust detection
           if [ -n "$(find . -maxdepth 3 -name 'Cargo.toml' 2>/dev/null)" ]; then
             langs="${langs}\"rust\","
           fi
-          
+
           # C/C++ detection
-          if [ -n "$(find . -maxdepth 4 -name 'CMakeLists.txt' -o -name '*.cpp' -o -name '*.hpp' 2>/dev/null)" ]; then
+          if [ -n "$(find . -maxdepth 4 \( -name 'CMakeLists.txt' -o -name '*.cpp' -o -name '*.hpp' \) 2>/dev/null)" ]; then
             langs="${langs}\"cpp\","
           fi
-          
+
           # Node/JS detection
           if [ -n "$(find . -maxdepth 3 -name 'package.json' -not -path '*/node_modules/*' 2>/dev/null)" ]; then
             langs="${langs}\"js\","
           fi
-          
+
           # Clean trailing comma and close array
           langs="${langs%,}"
           langs="${langs}]"
           if [ "$langs" = "]" ]; then langs="[]"; fi
-          
+
           echo "Discovered ecosystems: $langs"
           echo "matrix=$langs" >> $GITHUB_OUTPUT
 
@@ -75,7 +75,7 @@ jobs:
       fail-fast: false
       matrix:
         language: ${{ fromJSON(needs.discovery.outputs.matrix) }}
-    
+
     steps:
       - uses: actions/checkout@v4
 
@@ -88,13 +88,23 @@ jobs:
           go-version: ${{ inputs.go_version }}
           cache: true
 
+      - name: Configure Private Go Module Auth
+        env:
+          GH_TOKEN: ${{ secrets.FLEET_ACCESS_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          if [ -n "$GH_TOKEN" ]; then
+            git config --global url."https://x-access-token:${GH_TOKEN}@github.com/Bastien-Antigravity/".insteadOf "https://github.com/Bastien-Antigravity/"
+          fi
+
       - name: Build Core CGO Libraries (Dependencies)
         if: matrix.language != 'go'
         run: |
-          if [ -f Makefile ] && grep -q "^build-lib:" Makefile 2>/dev/null; then
-            make build-lib || true
-          elif [ -f Makefile ] && grep -q "^core:" Makefile 2>/dev/null; then
-            make core || true
+          if [ -f Makefile ] && grep -qE "^(build-lib|core)\b.*:" Makefile 2>/dev/null; then
+            if grep -qE "^build-lib\b.*:" Makefile 2>/dev/null; then
+              make build-lib
+            else
+              make core
+            fi
           else
             echo "No CGO build target found in Makefile, skipping."
           fi
@@ -105,35 +115,54 @@ jobs:
       - name: Go Native Checks & Tests
         if: matrix.language == 'go'
         run: |
-          for dir in $(find . -maxdepth 3 -name "go.mod" -exec dirname {} \; | sort -u); do
+          while IFS= read -r gomod; do
+            dir=$(dirname "$gomod")
             echo "========================================"
             echo "Testing Go in $dir"
             echo "========================================"
-            cd "$dir"
-            if [ -f go.mod ]; then
-              grep -E '=> \.\./' go.mod | while read -r line; do
-                target=$(echo "$line" | awk '{print $NF}')
-                mod=$(echo "$line" | awk '{print $1}')
-                if [ ! -d "$target" ]; then
-                  echo "Removing missing local replace in CI: $mod -> $target"
-                  go mod edit -dropreplace "$mod" || true
-                fi
-              done
-            fi
-            if [ -f go.sum ]; then
-              sed -i.bak '/github.com\/Bastien-Antigravity/d' go.sum 2>/dev/null || sed -i '' '/github.com\/Bastien-Antigravity/d' go.sum 2>/dev/null || true
-              rm -f go.sum.bak
-            fi
-            unformatted=$(gofmt -l . 2>/dev/null | tr -d ' ')
+            pushd "$dir" > /dev/null
+
+            unformatted=$(gofmt -l .)
             if [ -n "$unformatted" ]; then
-              echo "Unformatted files found in $dir:"
+              echo "ERROR: Unformatted Go files found in $dir:"
+              echo "$unformatted"
               gofmt -d .
+              exit 1
             else
               echo "All Go files in $dir are properly formatted."
             fi
-            go test -v ./... || go test -v ./src/... || true
-            cd - > /dev/null
-          done
+
+            dropped_replace=false
+            if [ -f go.mod ]; then
+              while IFS= read -r line; do
+                target=$(echo "$line" | awk '{print $NF}')
+                if echo "$line" | awk '{print $1}' | grep -qx "replace"; then
+                  mod=$(echo "$line" | awk '{print $2}')
+                else
+                  mod=$(echo "$line" | awk '{print $1}')
+                fi
+                if [ -n "$mod" ] && [ ! -d "$target" ]; then
+                  echo "Removing missing local replace in CI: $mod -> $target"
+                  go mod edit -dropreplace "$mod"
+                  dropped_replace=true
+                fi
+              done < <(grep -E '=>[[:space:]]+\.\./' go.mod || true)
+            fi
+
+            if [ "$dropped_replace" = true ]; then
+              echo "Refreshing go.sum after dropping missing local replace directives..."
+              GOWORK=off go mod tidy
+            fi
+
+            if [ -f go.sum ]; then
+              GOWORK=off go mod verify
+            fi
+
+            GOWORK=off go build ./...
+            GOWORK=off go test -v ./...
+
+            popd > /dev/null
+          done < <(find . -maxdepth 3 -name "go.mod" | sort -u)
 
       # ---------------------------------------------------------
       # PYTHON ECOSYSTEM
@@ -147,22 +176,37 @@ jobs:
       - name: Python Tests
         if: matrix.language == 'python'
         run: |
-          pip install pytest build setuptools wheel || true
-          for dir in $(find . -maxdepth 3 -name "requirements.txt" -o -name "pyproject.toml" -o -name "setup.py" -exec dirname {} \; | sort -u); do
+          python -m pip install --upgrade pip pytest build setuptools wheel
+          ran_root_tests=false
+          while IFS= read -r dir; do
             echo "========================================"
             echo "Testing Python in $dir"
             echo "========================================"
-            cd "$dir"
-            
+            pushd "$dir" > /dev/null
+
             # Install local dependencies
-            if [ -f setup.py ] || [ -f pyproject.toml ]; then pip install -e . || true; fi
-            if [ -f requirements.txt ]; then pip install -r requirements.txt || true; fi
-            
-            # Run pytest with graceful fallback if 0 tests found
-            pytest || true
-            
-            cd - > /dev/null
-          done
+            if [ -f setup.py ] || [ -f pyproject.toml ]; then pip install -e .; fi
+            if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+            # Run pytest; allow ONLY exit code 0 (pass) or 5 (no tests collected)
+            rc=0
+            pytest || rc=$?
+            if [ "$rc" -ne 0 ] && [ "$rc" -ne 5 ]; then
+              exit "$rc"
+            fi
+            if [ "$dir" = "." ]; then
+              ran_root_tests=true
+            fi
+
+            popd > /dev/null
+          done < <(find . -maxdepth 3 \( -name "requirements.txt" -o -name "pyproject.toml" -o -name "setup.py" \) -exec dirname {} \; | sort -u)
+
+          if [ -d "scripts/tests" ] && [ "$ran_root_tests" = false ]; then
+            echo "========================================"
+            echo "Testing Python unittest in scripts/tests"
+            echo "========================================"
+            python3 -m unittest discover -s scripts/tests
+          fi
 
       # ---------------------------------------------------------
       # RUST ECOSYSTEM
@@ -174,14 +218,14 @@ jobs:
       - name: Rust Tests
         if: matrix.language == 'rust'
         run: |
-          for dir in $(find . -maxdepth 3 -name "Cargo.toml" -exec dirname {} \; | sort -u); do
+          while IFS= read -r dir; do
             echo "========================================"
             echo "Testing Rust in $dir"
             echo "========================================"
-            cd "$dir"
-            cargo test --verbose || true
-            cd - > /dev/null
-          done
+            pushd "$dir" > /dev/null
+            cargo test --verbose
+            popd > /dev/null
+          done < <(find . -maxdepth 3 -name "Cargo.toml" -exec dirname {} \; | sort -u)
 
       # ---------------------------------------------------------
       # NODE / JS ECOSYSTEM
@@ -197,15 +241,19 @@ jobs:
       - name: Node Tests
         if: matrix.language == 'js'
         run: |
-          for dir in $(find . -maxdepth 3 -name "package.json" -not -path "*/node_modules/*" -exec dirname {} \; | sort -u); do
+          while IFS= read -r dir; do
             echo "========================================"
             echo "Testing Node in $dir"
             echo "========================================"
-            cd "$dir"
-            npm ci || npm install || true
-            npm test --if-present || true
-            cd - > /dev/null
-          done
+            pushd "$dir" > /dev/null
+            if [ -f package-lock.json ]; then
+              npm ci
+            else
+              npm install
+            fi
+            npm test --if-present
+            popd > /dev/null
+          done < <(find . -maxdepth 3 -name "package.json" -not -path "*/node_modules/*" -exec dirname {} \; | sort -u)
 
       # ---------------------------------------------------------
       # C++ ECOSYSTEM
@@ -213,19 +261,19 @@ jobs:
       - name: CPP Tests
         if: matrix.language == 'cpp'
         run: |
-          for dir in $(find . -maxdepth 3 -name "Makefile" -exec dirname {} \; | sort -u); do
+          while IFS= read -r dir; do
             if [ "$dir" = "." ]; then continue; fi
             if find "$dir" -maxdepth 2 \( -name "*.cpp" -o -name "*.cc" -o -name "*.c" \) | grep -q .; then
               if grep -q "^test:" "$dir/Makefile" 2>/dev/null; then
                 echo "========================================"
                 echo "Building/Testing CPP in $dir"
                 echo "========================================"
-                cd "$dir"
-                make test || true
-                cd - > /dev/null
+                pushd "$dir" > /dev/null
+                make test
+                popd > /dev/null
               fi
             fi
-          done
+          done < <(find . -maxdepth 3 -name "Makefile" -exec dirname {} \; | sort -u)
 
       # ---------------------------------------------------------
       # FLEET INTEGRATION & DISPATCH

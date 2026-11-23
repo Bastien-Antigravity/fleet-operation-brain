@@ -1,0 +1,128 @@
+# [FLEET-ARCHITECT] Centralized GHCR Container Build & Publish Engine
+# Sync-ID: 2026-11-23-GHCR-001
+name: Fleet Master GHCR Publish
+
+on:
+  workflow_call:
+    inputs:
+      package_name:
+        description: "Canonical GHCR package name (defaults to repository basename)"
+        required: false
+        type: string
+        default: ''
+      dockerfile:
+        description: "Path to Dockerfile"
+        required: false
+        type: string
+        default: './Dockerfile'
+      context:
+        description: "Docker build context directory"
+        required: false
+        type: string
+        default: '.'
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  pre-build-gate:
+    name: Pre-Build Compliance & Version Gate
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.verify.outputs.version }}
+      image_name: ${{ steps.verify.outputs.image_name }}
+      target_branch: ${{ steps.verify.outputs.target_branch }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_branch || github.ref_name }}
+
+      - name: Verify VERSION.txt & Dockerfile Standards
+        id: verify
+        run: |
+          if [ ! -f VERSION.txt ]; then
+            echo "ERROR: VERSION.txt is missing at repository root!" >&2
+            exit 1
+          fi
+          VERSION=$(tr -d '[:space:]' < VERSION.txt)
+          if [ -z "$VERSION" ]; then
+            echo "ERROR: VERSION.txt is empty!" >&2
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+          TARGET_BRANCH="${{ github.event.workflow_run.head_branch || github.ref_name }}"
+          echo "target_branch=$TARGET_BRANCH" >> "$GITHUB_OUTPUT"
+
+          DOCKERFILE_PATH="${{ inputs.dockerfile }}"
+          if [ ! -f "$DOCKERFILE_PATH" ]; then
+            echo "ERROR: Dockerfile not found at $DOCKERFILE_PATH" >&2
+            exit 1
+          fi
+
+          if ! grep -q "org.opencontainers.image.source" "$DOCKERFILE_PATH"; then
+            echo "ERROR: Dockerfile is missing LABEL org.opencontainers.image.source" >&2
+            exit 1
+          fi
+
+          if grep -q "/workspace/microservice-toolbox" "$DOCKERFILE_PATH"; then
+            if ! grep -q "go work init" "$DOCKERFILE_PATH"; then
+              echo "ERROR: Dockerfile clones /workspace/microservice-toolbox without running 'go work init'" >&2
+              exit 1
+            fi
+          fi
+
+          PKG_NAME="${{ inputs.package_name }}"
+          if [ -z "$PKG_NAME" ]; then
+            REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+            IMAGE_NAME="${{ env.REGISTRY }}/${REPO_LOWER}"
+          else
+            OWNER_LOWER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+            PKG_LOWER=$(echo "$PKG_NAME" | tr '[:upper:]' '[:lower:]')
+            IMAGE_NAME="${{ env.REGISTRY }}/${OWNER_LOWER}/${PKG_LOWER}"
+          fi
+          echo "image_name=$IMAGE_NAME" >> "$GITHUB_OUTPUT"
+          echo "Verified GHCR target: $IMAGE_NAME (branch: $TARGET_BRANCH, version: $VERSION)"
+
+  build-and-push:
+    name: Build & Push Image to GHCR
+    needs: pre-build-gate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.pre-build-gate.outputs.target_branch }}
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.FLEET_ACCESS_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ needs.pre-build-gate.outputs.image_name }}
+          tags: |
+            type=raw,value=${{ needs.pre-build-gate.outputs.target_branch }}
+            type=raw,value=v${{ needs.pre-build-gate.outputs.version }}
+            type=raw,value=latest,enable=${{ needs.pre-build-gate.outputs.target_branch == 'main' }}
+          labels: |
+            org.opencontainers.image.version=${{ needs.pre-build-gate.outputs.version }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ inputs.context }}
+          file: ${{ inputs.dockerfile }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}

@@ -159,7 +159,17 @@ jobs:
             fi
 
             GOWORK=off go build ./...
-            GOWORK=off go test -v ./...
+            if [ "${{ github.repository }}" = "Bastien-Antigravity/sandbox-testing" ] || [ "$dir" = "./02-Scenarios/go" ]; then
+              echo "Verifying compilation of all sandbox-testing Go scenarios..."
+              GOWORK=off go test -c -o /dev/null .
+              if [ "${SANDBOX_LIVE_FLEET:-false}" = "true" ]; then
+                GOWORK=off go test -v ./...
+              else
+                GOWORK=off go test -v -run "TestScenario_PolyglotToolingParity|TestScenario_DynamicPortShiftingAndZeroHardcodedFallbacks|TestCrossRepoOpenMFELifecycleParity|TestScenario_Docker"
+              fi
+            else
+              GOWORK=off go test -v -race ./...
+            fi
 
             popd > /dev/null
           done < <(find . -maxdepth 3 -name "go.mod" | sort -u)

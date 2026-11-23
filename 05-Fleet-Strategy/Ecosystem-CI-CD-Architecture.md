@@ -64,8 +64,10 @@ graph TD
 | Workflow File | Repository Role | Trigger | Description |
 | :--- | :--- | :--- | :--- |
 | `.github/workflows/ci.yml` | All Repositories | `push` (develop, main), `pull_request` | Wrapper delegating to central `master-ci.yml@develop` |
+| `.github/workflows/docker-publish.yml` | Containerized Microservices | `workflow_run` (`Fleet CI` success), `workflow_dispatch` | Wrapper delegating to central `master-docker-publish.yml@develop` |
 | `.github/workflows/release.yml` | Shared Polyglot Libraries | `push` (tags: `v*`) | Compiles multi-OS binaries (Linux/macOS/Windows) and PyPI wheels for GitHub Releases |
-| `05-Fleet-Operation/.github/workflows/master-ci.yml` | `05-Fleet-Operation` | Reusable (`workflow_call`) | Central polyglot matrix engine |
+| `05-Fleet-Operation/.github/workflows/master-ci.yml` | `05-Fleet-Operation` | Reusable (`workflow_call`) | Central polyglot matrix engine (`go test -race`, standalone sandbox compile checks) |
+| `05-Fleet-Operation/.github/workflows/master-docker-publish.yml` | `05-Fleet-Operation` | Reusable (`workflow_call`) | Central GHCR container pre-flight (`VERSION.txt`, `go work init`, OCI labels) & publish engine |
 
 ---
 

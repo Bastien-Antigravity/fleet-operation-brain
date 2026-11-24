@@ -1,0 +1,16 @@
+# [FLEET-ARCHITECT] Centralized GHCR Container Image Build & Publish
+# Sync-ID: 2026-11-23-GHCR-001
+name: Publish Docker Image
+
+on:
+  workflow_run:
+    workflows: ["Fleet CI"]
+    types: [completed]
+    branches: [develop]
+  workflow_dispatch:
+
+jobs:
+  docker-publish:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    uses: Bastien-Antigravity/fleet-operation-brain/.github/workflows/master-docker-publish.yml@develop
+    secrets: inherit

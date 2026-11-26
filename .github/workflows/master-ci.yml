@@ -132,26 +132,12 @@ jobs:
               echo "All Go files in $dir are properly formatted."
             fi
 
-            dropped_replace=false
             if [ -f go.mod ]; then
-              while IFS= read -r line; do
-                target=$(echo "$line" | awk '{print $NF}')
-                if echo "$line" | awk '{print $1}' | grep -qx "replace"; then
-                  mod=$(echo "$line" | awk '{print $2}')
-                else
-                  mod=$(echo "$line" | awk '{print $1}')
-                fi
-                if [ -n "$mod" ] && [ ! -d "$target" ]; then
-                  echo "Removing missing local replace in CI: $mod -> $target"
-                  go mod edit -dropreplace "$mod"
-                  dropped_replace=true
-                fi
-              done < <(grep -E '=>[[:space:]]+\.\./' go.mod || true)
-            fi
-
-            if [ "$dropped_replace" = true ]; then
-              echo "Refreshing go.sum after dropping missing local replace directives..."
-              GOWORK=off go mod tidy
+              if grep -qE '=>[[:space:]]*(\.\./|\./|/)' go.mod; then
+                echo "ERROR [GO_LOCAL_REPLACE_POLLUTION]: Committed local replace directive found in $dir/go.mod!" >&2
+                grep -nE '=>[[:space:]]*(\.\./|\./|/)' go.mod >&2
+                exit 1
+              fi
             fi
 
             if [ -f go.sum ]; then
@@ -277,19 +263,33 @@ jobs:
       - name: CPP Tests
         if: matrix.language == 'cpp'
         run: |
+          ran_cpp=false
           while IFS= read -r dir; do
-            if [ "$dir" = "." ]; then continue; fi
-            if find "$dir" -maxdepth 2 \( -name "*.cpp" -o -name "*.cc" -o -name "*.c" \) | grep -q .; then
-              if grep -q "^test:" "$dir/Makefile" 2>/dev/null; then
+            if [ -f "$dir/Makefile" ] && grep -q "^test:" "$dir/Makefile" 2>/dev/null; then
+              if find "$dir" -maxdepth 2 \( -name "*.cpp" -o -name "*.cc" -o -name "*.c" \) | grep -q .; then
                 echo "========================================"
-                echo "Building/Testing CPP in $dir"
+                echo "Building/Testing CPP (Makefile) in $dir"
                 echo "========================================"
                 pushd "$dir" > /dev/null
                 make test
                 popd > /dev/null
+                ran_cpp=true
               fi
+            elif [ -f "$dir/CMakeLists.txt" ]; then
+              echo "========================================"
+              echo "Building/Testing CPP (CMake + CTest) in $dir"
+              echo "========================================"
+              pushd "$dir" > /dev/null
+              cmake -B build -DCMAKE_BUILD_TYPE=Release
+              cmake --build build --parallel
+              ctest --test-dir build --output-on-failure
+              popd > /dev/null
+              ran_cpp=true
             fi
-          done < <(find . -maxdepth 3 -name "Makefile" -exec dirname {} \; | sort -u)
+          done < <(find . -maxdepth 3 \( -name "CMakeLists.txt" -o -name "Makefile" \) -not -path "*/build/*" -exec dirname {} \; | sort -u)
+          if [ "$ran_cpp" = false ]; then
+            echo "WARNING: CPP matrix triggered, but no testable Makefile or CMakeLists.txt found."
+          fi
 
       # ---------------------------------------------------------
       # FLEET INTEGRATION & DISPATCH

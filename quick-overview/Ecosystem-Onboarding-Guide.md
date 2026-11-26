@@ -7,10 +7,11 @@ microservice: 05-Fleet-Operation
 type: overview
 status: active
 tags:
-- '#service/05-Fleet-Operation'
+- '#service/05-fleet-operation'
 - '#type/overview'
 - '#state/active'
 - '#ai/ignore'
+- '#zone/3-fleet'
 ---
 # 🚀 Out-of-the-Box Ecosystem Onboarding & Sharing Guide
 

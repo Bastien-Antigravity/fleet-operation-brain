@@ -7,6 +7,7 @@ tags:
 - '#service/{{repo_name}}'
 - '#type/architecture'
 - '#state/active'
+- '#zone/3-fleet'
 ---
 # Architecture Overview
 
